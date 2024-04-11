@@ -1,0 +1,21 @@
+logLevel: debug
+
+btc:
+  preHandledTxid:
+  confirmationDepth: 6
+  netParams: testnet
+  targetDepositAddress: tb1q9zkpszu0m06n42jcfw0jhtad4yndsedn4uuye2
+
+lorenzo:
+  key: submitter
+  chain-id: lorenzo_26666-1
+  rpc-addr: http://192.168.110.79:26657
+  account-prefix: lrz
+  keyring-backend: test
+  gas-adjustment: 1.5
+  gas-prices: 0alrz
+  key-directory: ./.testnet/node0/lorenzod
+  debug: true
+  timeout: 20s
+  output-format: json
+  sign-mode: direct
