@@ -9,7 +9,7 @@ btc:
 lorenzo:
   key: submitter
   chain-id: lorenzo_26666-1
-  rpc-addr: http://192.168.110.79:26657
+  rpc-addr: http://127.0.0.1:26657
   account-prefix: lrz
   keyring-backend: test
   gas-adjustment: 1.5

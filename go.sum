@@ -215,8 +215,8 @@ github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1 h1:MnYOjaXsn1XkcsLyiT
 github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1/go.mod h1:JEhGmVj5rZX5bTfOqh3nltE2N6+qMI4HVNV2vW6PpOQ=
 github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f h1:4KnWSCATv4wJM+4Rxg54LIUtRdiPw8yQLGMQqmKPDMg=
 github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f/go.mod h1:U2SWigR1rqAsFdc1qrKFhysjUMRNC1MLxApvemQosvQ=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240409095140-d10dfe83b421 h1:lQuelB+lF/KQ+pNJV81lE2meNZHinx6rY/OlJIa/Dkw=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240409095140-d10dfe83b421/go.mod h1:NfEAPK5hKDlly8EgloeD6waLzuU4DB3maZDGs8FA0B8=
+github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc h1:uLreiYwOGBfOJFM5Fcjf09SgNDRDVSb9Fh0sgOwyYcM=
+github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc/go.mod h1:Up9VePLBzVncN1LhwQDgULdzwNhqEg23FhLVmXsAA+w=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
@@ -1782,8 +1782,6 @@ gopkg.in/fsnotify.v1 v1.4.7/go.mod h1:Tz8NjZHkW78fSQdbUxIjBTcgA1z1m8ZHf0WmKUhAMy
 gopkg.in/gcfg.v1 v1.2.3/go.mod h1:yesOnuUOFQAhST5vPY4nbZsb/huCgGGXlipJsBn0b3o=
 gopkg.in/ini.v1 v1.67.0 h1:Dgnx+6+nfE+IfzjUEISNeydPJh9AXNNsWbGP9KzCsOA=
 gopkg.in/ini.v1 v1.67.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
-gopkg.in/natefinch/lumberjack.v2 v2.2.1 h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=
-gopkg.in/natefinch/lumberjack.v2 v2.2.1/go.mod h1:YD8tP3GAjkrDg1eZH7EGmyESg/lsYskCTPBJVb9jqSc=
 gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce h1:+JknDZhAj8YMt7GC73Ei8pv4MzjDUNPHgQWJdtMAaDU=
 gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce/go.mod h1:5AcXVHNjg+BDxry382+8OKon8SEWiKktQR07RKPsv1c=
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=

@@ -9,9 +9,9 @@ require (
 	cosmossdk.io/log v1.3.0 // indirect
 	cosmossdk.io/math v1.2.0 // indirect
 	github.com/avast/retry-go/v4 v4.5.1 // indirect
-	github.com/btcsuite/btcd v0.24.0 // indirect
+	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/cometbft/cometbft v0.37.2 // indirect
 	github.com/cosmos/cosmos-sdk v0.47.4 //indirect
@@ -20,13 +20,13 @@ require (
 	github.com/gogo/protobuf v1.3.3 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/jsternberg/zap-logfmt v1.3.0 // indirect
+	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
-	github.com/spf13/viper v1.18.2 // indirect
+	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4 // indirect
-	go.uber.org/zap v1.26.0 // indirect
+	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.20.0 // indirect
 	google.golang.org/grpc v1.61.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
@@ -35,7 +35,7 @@ require (
 
 require (
 	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240409095140-d10dfe83b421
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc // indirect
 )
 
 require (
@@ -217,7 +217,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"go.uber.org/zap"
-
 	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/config"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 type Config struct {

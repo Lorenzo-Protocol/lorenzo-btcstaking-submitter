@@ -178,7 +178,7 @@ func (c *BTCClient) GetBTCCurrentHeight() (uint64, error) {
 
 	var height uint64
 	if err := json.NewDecoder(resp.Body).Decode(&height); err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	return height, nil
