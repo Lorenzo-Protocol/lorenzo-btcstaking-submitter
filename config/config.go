@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -11,19 +11,20 @@ import (
 )
 
 type Config struct {
-	LogLevel string               `mapstructure:"logLevel"`
-	Lorenzo  lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
-	BTC      BTCConfig            `mapstructure:"btc"`
+	BtcApiEndpoint string               `mapstructure:"btcApiEndpoint"`
+	DBDir          string               `mapstructure:"dbDir"`
+	LogLevel       string               `mapstructure:"logLevel"`
+	Lorenzo        lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
+	TxRelayer      TxRelayerConfig      `mapstructure:"tx-relayer"`
 }
 
-type BTCConfig struct {
-	PreHandledTxid       string `mapstructure:"preHandledTxid"`
+type TxRelayerConfig struct {
 	ConfirmationDepth    int    `mapstructure:"confirmationDepth"`
 	NetParams            string `mapstructure:"netParams"`
 	TargetDepositAddress string `mapstructure:"targetDepositAddress"`
 }
 
-func (cfg *BTCConfig) Validate() error {
+func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth <= 0 {
 		return errors.New("confirmationDepth must be positive")
 	}
@@ -42,15 +43,11 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if err := cfg.BTC.Validate(); err != nil {
+	if err := cfg.TxRelayer.Validate(); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (cfg *Config) IsTestNet() bool {
-	return cfg.BTC.NetParams == "testnet"
 }
 
 func (cfg *Config) CreateLogger() (*zap.Logger, error) {

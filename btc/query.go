@@ -1,4 +1,4 @@
-package main
+package btc
 
 import (
 	"bytes"
@@ -102,26 +102,21 @@ type BtcTx struct {
 	} `json:"status"`
 }
 
-type BTCClient struct {
-	prefixUrl string
+type BTCQuery struct {
+	apiEndpoint string
 }
 
-// NewBTCClient testnet prefixUrl: https://blockstream.info/testnet
+// NewBTCQuery testnet apiEndpoint: https://blockstream.info/testnet
 //
-//	mainnet prefixUrl: https://blockstream.info
-func NewBTCClient(isTest bool) *BTCClient {
-	return &BTCClient{
-		prefixUrl: func() string {
-			if isTest {
-				return "https://blockstream.info/testnet"
-			}
-			return "https://blockstream.info"
-		}(),
+//	mainnet apiEndpoint: https://blockstream.info
+func NewBTCQuery(apiEndpoint string) *BTCQuery {
+	return &BTCQuery{
+		apiEndpoint: apiEndpoint,
 	}
 }
 
-func (c *BTCClient) GetTxBytes(txid string) ([]byte, error) {
-	url := c.prefixUrl + "/api/tx/" + txid + "/raw"
+func (c *BTCQuery) GetTxBytes(txid string) ([]byte, error) {
+	url := c.apiEndpoint + "/tx/" + txid + "/raw"
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -133,9 +128,9 @@ func (c *BTCClient) GetTxBytes(txid string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (c *BTCClient) GetTxs(address string, lastSeenTxid string) ([]BtcTx, error) {
+func (c *BTCQuery) GetTxs(address string, lastSeenTxid string) ([]BtcTx, error) {
 	var txs []BtcTx
-	url := c.prefixUrl + "/api/address/" + address + "/txs/chain"
+	url := c.apiEndpoint + "/address/" + address + "/txs/chain"
 
 	if lastSeenTxid != "" {
 		url += "/" + lastSeenTxid
@@ -152,8 +147,8 @@ func (c *BTCClient) GetTxs(address string, lastSeenTxid string) ([]BtcTx, error)
 	return txs, nil
 }
 
-func (c *BTCClient) GetTxBlockProof(txid string) ([]byte, error) {
-	url := c.prefixUrl + "/api/tx/" + txid + "/merkleblock-proof"
+func (c *BTCQuery) GetTxBlockProof(txid string) ([]byte, error) {
+	url := c.apiEndpoint + "/tx/" + txid + "/merkleblock-proof"
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -169,8 +164,8 @@ func (c *BTCClient) GetTxBlockProof(txid string) ([]byte, error) {
 	return proofRaw, nil
 }
 
-func (c *BTCClient) GetBTCCurrentHeight() (uint64, error) {
-	url := c.prefixUrl + "/api/blocks/tip/height"
+func (c *BTCQuery) GetBTCCurrentHeight() (uint64, error) {
+	url := c.apiEndpoint + "/blocks/tip/height"
 	resp, err := http.Get(url)
 	if err != nil {
 		return 0, err

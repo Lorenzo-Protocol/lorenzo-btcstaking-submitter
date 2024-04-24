@@ -1,7 +1,8 @@
 logLevel: debug
+dbDir: ./.testnet/db
+btcApiEndpoint: https://blockstream.info/testnet
 
-btc:
-  preHandledTxid:
+tx-relayer:
   confirmationDepth: 6
   netParams: testnet
   targetDepositAddress: tb1q9zkpszu0m06n42jcfw0jhtad4yndsedn4uuye2
