@@ -36,6 +36,7 @@ func NewTxRelayer(db db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerCo
 }
 
 func (r *TxRelayer) Start() error {
+	r.logger.Infof("start tx-relayer on BTC network: %s", r.conf.NetParams)
 	depositTargetAccount := r.conf.TargetDepositAddress
 	btcReceivingAddr, err := btcutil.DecodeAddress(r.conf.TargetDepositAddress, btc.GetBTCParams(r.conf.NetParams))
 	if err != nil {

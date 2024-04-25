@@ -1,15 +1,15 @@
 logLevel: debug
 dbDir: ./.testnet/db
-btcApiEndpoint: https://blockstream.info/testnet
+btcApiEndpoint: http://45.76.152.81:8084/signet/api
 
 tx-relayer:
   confirmationDepth: 6
-  netParams: testnet
-  targetDepositAddress: tb1q9zkpszu0m06n42jcfw0jhtad4yndsedn4uuye2
+  netParams: signet
+  targetDepositAddress: tb1qrgg5gtf39jdyn2uvas6zaq0z4z8elz6encl2s2
 
 lorenzo:
   key: submitter
-  chain-id: lorenzo_26666-1
+  chain-id: lorenzod_83291-1
   rpc-addr: http://127.0.0.1:26657
   account-prefix: lrz
   keyring-backend: test

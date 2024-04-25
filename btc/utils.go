@@ -66,11 +66,9 @@ func GetBTCParams(net string) *chaincfg.Params {
 		return &chaincfg.MainNetParams
 	case "testnet":
 		return &chaincfg.TestNet3Params
+	case "signet":
+		return &chaincfg.SigNetParams
+	default:
+		return &chaincfg.SigNetParams
 	}
-
-	err := fmt.Errorf(
-		"BTC network with name %s does not exist. should be one of {testnet,mainnet}",
-		net,
-	)
-	panic(err)
 }

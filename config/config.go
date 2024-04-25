@@ -32,9 +32,6 @@ func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth < MinConfirmationDepth {
 		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
 	}
-	if cfg.NetParams != "mainnet" && cfg.NetParams != "testnet" {
-		return errors.New("netParams must be either mainnet or testnet")
-	}
 	if cfg.TargetDepositAddress == "" {
 		return errors.New("targetDepositAddress must be set")
 	}
