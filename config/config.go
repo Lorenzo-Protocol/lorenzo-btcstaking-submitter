@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	MinConfirmationDepth = 6
+)
+
 type Config struct {
 	BtcApiEndpoint string               `mapstructure:"btcApiEndpoint"`
 	DBDir          string               `mapstructure:"dbDir"`
@@ -25,8 +29,8 @@ type TxRelayerConfig struct {
 }
 
 func (cfg *TxRelayerConfig) Validate() error {
-	if cfg.ConfirmationDepth <= 0 {
-		return errors.New("confirmationDepth must be positive")
+	if cfg.ConfirmationDepth < MinConfirmationDepth {
+		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
 	}
 	if cfg.NetParams != "mainnet" && cfg.NetParams != "testnet" {
 		return errors.New("netParams must be either mainnet or testnet")

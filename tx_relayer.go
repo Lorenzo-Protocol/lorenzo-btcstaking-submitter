@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
 	"time"
 
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/config"
+	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
 )
 
 type TxRelayer struct {
@@ -107,9 +107,18 @@ func (r *TxRelayer) Start() error {
 				continue
 			}
 
-			if err := r.submitDepositTxProof(btcReceivingAddr, r.lorenzoClient, proofRaw, txBytes); err != nil {
-				r.logger.Warnf("failed to submit deposit tx proof to lorenzo, txid: %s. error: %v", tx.Txid, err)
+			msg, err := r.newMsgCreateBTCStaking(btcReceivingAddr, r.lorenzoClient, proofRaw, txBytes)
+			if err != nil {
+				r.logger.Warnf("new MsgCreateBTCStaking failed, ignore it. txid:%s, error:%v", tx.Txid, err)
 				preHandledTxid = tx.Txid
+				continue
+			}
+
+			_, err = r.lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
+			if err != nil {
+				r.logger.Warnf("failed to submit MsgCreateBTCStaking, will try again. txid:%s, error:%v", tx.Txid, err)
+				i--
+				time.Sleep(restInterval)
 				continue
 			}
 
@@ -123,19 +132,19 @@ func (r *TxRelayer) Start() error {
 	}
 }
 
-func (r *TxRelayer) submitDepositTxProof(btcReceivingAddr btcutil.Address, lorenzoClient *lrzclient.Client, proofRaw []byte, txBytes []byte) error {
+func (r *TxRelayer) newMsgCreateBTCStaking(btcReceivingAddr btcutil.Address, lorenzoClient *lrzclient.Client, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
 	stakingMsgTx, err := btc.NewBTCTxFromBytes(txBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, btcReceivingAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	merkleBlock, err := keeper.ParseMerkleBlock(proofRaw)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	blockHash := merkleBlock.Header.BlockHash()
 
@@ -143,7 +152,7 @@ func (r *TxRelayer) submitDepositTxProof(btcReceivingAddr btcutil.Address, loren
 	blockHashBytes.FromChainhash(&blockHash)
 	txIndex, proofBytes, err := keeper.ParseBTCProof(merkleBlock)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	msg := &types.MsgCreateBTCStaking{
@@ -158,9 +167,5 @@ func (r *TxRelayer) submitDepositTxProof(btcReceivingAddr btcutil.Address, loren
 		},
 	}
 
-	_, err = lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return msg, nil
 }

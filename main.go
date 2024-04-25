@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
+	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
+
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/config"
-	db2 "github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
 )
 
 func main() {
@@ -17,7 +19,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db, err := db2.NewLevelDB(cfg.DBDir)
+	database, err := db.NewLevelDB(cfg.DBDir)
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +37,7 @@ func main() {
 	}
 	logger := parentLogger.With().Sugar()
 
-	txRelayer := NewTxRelayer(db, logger, &cfg.TxRelayer, btcQuery, lorenzoClient)
+	txRelayer := NewTxRelayer(database, logger, &cfg.TxRelayer, btcQuery, lorenzoClient)
 	if err := txRelayer.Start(); err != nil {
 		panic(err)
 	}
