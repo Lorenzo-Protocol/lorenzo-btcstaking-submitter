@@ -4,10 +4,10 @@ import (
 	"flag"
 
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
 
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/config"
+	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
 )
 
 func main() {
