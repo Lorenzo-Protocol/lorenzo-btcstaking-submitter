@@ -1,5 +1,5 @@
 BUILDDIR ?= $(CURDIR)/build
-BIN_NAME=lrz-submit-btcstaking
+BIN_NAME=lrz-btcstaking-submitter
 
 build:
 	go build -o $(BUILDDIR)/$(BIN_NAME) .
