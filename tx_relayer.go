@@ -36,10 +36,11 @@ func NewTxRelayer(db db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerCo
 }
 
 func (r *TxRelayer) Start() error {
-	r.logger.Infof("start tx-relayer on BTC network: %s", r.conf.NetParams)
+	r.logger.Infof("staring tx-relayer on BTC network: %s", r.conf.NetParams)
 	depositTargetAccount := r.conf.TargetDepositAddress
 	btcReceivingAddr, err := btcutil.DecodeAddress(r.conf.TargetDepositAddress, btc.GetBTCParams(r.conf.NetParams))
 	if err != nil {
+		r.logger.Errorf("invalid Lorenzo staking account")
 		return err
 	}
 
@@ -50,13 +51,13 @@ func (r *TxRelayer) Start() error {
 	for {
 		txs, err := r.btcQuery.GetTxs(depositTargetAccount, preHandledTxid)
 		if err != nil {
-			r.logger.Warnf("failed to get txs from BTC chain, lastest txid: %s. Will try again, error:%v", preHandledTxid, err)
+			r.logger.Errorf("failed to get txs from BTC chain, lastest txid: %s. error:%v", preHandledTxid, err)
 			time.Sleep(restInterval)
 			continue
 		}
 
 		if len(txs) == 0 {
-			r.logger.Infof("no new txs found, will try again")
+			r.logger.Infof("no new txs found")
 			time.Sleep(btcInterval)
 			continue
 		}
@@ -64,14 +65,14 @@ func (r *TxRelayer) Start() error {
 		for i := 0; i < len(txs); i++ {
 			btcCurrentHeight, err := r.btcQuery.GetBTCCurrentHeight()
 			if err != nil {
-				r.logger.Warnf("failed to get BTC current height. Will try again. error:%v", err)
+				r.logger.Warnf("failed to get BTC current height. error:%v", err)
 				i--
 				time.Sleep(restInterval)
 				continue
 			}
 			tx := txs[i]
 			if tx.Status.BlockHeight+btcConfirmationDepth > int(btcCurrentHeight) {
-				r.logger.Debugf("tx is not mature enough, txid: %s. height:%d, currentHeight:%d, Will try again",
+				r.logger.Debugf("tx is not finalized, txid: %s. height:%d, currentHeight:%d",
 					tx.Txid, tx.Status.BlockHeight, btcCurrentHeight)
 				i--
 				time.Sleep(btcInterval)
@@ -80,7 +81,7 @@ func (r *TxRelayer) Start() error {
 
 			txStakingRecordResp, err := r.lorenzoClient.GetBTCStakingRecord(tx.Txid)
 			if err != nil {
-				r.logger.Warnf("failed to get tx staking record from lorenzo, error:%v, txid: %s. Will try again", err, tx.Txid)
+				r.logger.Warnf("failed to get tx staking record from lorenzo, error:%v, txid: %s", err, tx.Txid)
 				i--
 				time.Sleep(restInterval)
 				continue
@@ -94,7 +95,7 @@ func (r *TxRelayer) Start() error {
 
 			proofRaw, err := r.btcQuery.GetTxBlockProof(tx.Txid)
 			if err != nil {
-				r.logger.Warnf("failed to get block proof from BTC chain, txid: %s. error:%v, Will try again",
+				r.logger.Errorf("failed to get block proof from BTC chain, txid: %s. error:%v",
 					tx.Txid, err)
 				i--
 				time.Sleep(restInterval)
@@ -102,7 +103,7 @@ func (r *TxRelayer) Start() error {
 			}
 			txBytes, err := r.btcQuery.GetTxBytes(tx.Txid)
 			if err != nil {
-				r.logger.Warnf("failed to get tx bytes from BTC chain, txid: %s. error: %v, Will try again", tx.Txid, err)
+				r.logger.Errorf("failed to get tx bytes from BTC chain, txid: %s. error: %v", tx.Txid, err)
 				i--
 				time.Sleep(restInterval)
 				continue
@@ -110,14 +111,14 @@ func (r *TxRelayer) Start() error {
 
 			msg, err := r.newMsgCreateBTCStaking(btcReceivingAddr, r.lorenzoClient, proofRaw, txBytes)
 			if err != nil {
-				r.logger.Warnf("new MsgCreateBTCStaking failed, ignore it. txid:%s, error:%v", tx.Txid, err)
+				r.logger.Errorf("failed to create BTC staking message. txid:%s, error:%v", tx.Txid, err)
 				preHandledTxid = tx.Txid
 				continue
 			}
 
 			_, err = r.lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
 			if err != nil {
-				r.logger.Warnf("failed to submit MsgCreateBTCStaking, will try again. txid:%s, error:%v", tx.Txid, err)
+				r.logger.Errorf("failed to submit BTC staking message. txid:%s, error:%v", tx.Txid, err)
 				i--
 				time.Sleep(restInterval)
 				continue
@@ -126,7 +127,7 @@ func (r *TxRelayer) Start() error {
 			r.logger.Infof("create btc staking with btc proof successfully, txid: %s", tx.Txid)
 			preHandledTxid = tx.Txid
 			if err := db.SetLastSeenBtcTxid(r.db, tx.Txid); err != nil {
-				r.logger.Warnf("save last seen btc txid failed:%s", tx.Txid)
+				r.logger.Errorf("failed to save last seen btc txid:%s", tx.Txid)
 			}
 			continue
 		}
