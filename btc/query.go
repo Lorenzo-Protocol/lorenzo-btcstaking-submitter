@@ -106,9 +106,7 @@ type BTCQuery struct {
 	apiEndpoint string
 }
 
-// NewBTCQuery testnet apiEndpoint: https://blockstream.info/testnet
-//
-//	mainnet apiEndpoint: https://blockstream.info
+// NewBTCQuery new BTCQuery for querying btc data
 func NewBTCQuery(apiEndpoint string) *BTCQuery {
 	return &BTCQuery{
 		apiEndpoint: apiEndpoint,

@@ -5,9 +5,9 @@ import (
 
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
 
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/btc"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/config"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
 )
 
 func main() {

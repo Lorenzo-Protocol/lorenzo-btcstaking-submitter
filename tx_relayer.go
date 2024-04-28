@@ -11,9 +11,9 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"go.uber.org/zap"
 
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/btc"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/config"
-	"github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
 )
 
 type TxRelayer struct {

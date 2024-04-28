@@ -1,8 +1,6 @@
-module github.com/Lorenzo-Protocol/lorenzo-submit-btcstaking
+module github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter
 
 go 1.21
-
-toolchain go1.21.4
 
 require (
 	cosmossdk.io/errors v1.0.1 // indirect
@@ -35,8 +33,10 @@ require (
 
 require (
 	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc // indirect
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc
 )
+
+require github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
 
 require (
 	cloud.google.com/go v0.111.0 // indirect
@@ -182,7 +182,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/status-im/keycard-go v0.2.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
