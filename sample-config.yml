@@ -3,13 +3,13 @@ logLevel: debug
 dbDir: ./.testnet/db
 # BTC blockstream api
 # https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: http://45.76.152.81:8084/signet/api
+btcApiEndpoint: http://45.32.123.167:8081/testnet/api
 
 tx-relayer:
   confirmationDepth: 6
   # BTC network type:mainet/testnet/signet
-  netParams: signet
-  targetDepositAddress: tb1qrgg5gtf39jdyn2uvas6zaq0z4z8elz6encl2s2
+  netParams: testnet
+  targetDepositAddress: tb1p97g0dpmsm2fxkmkw9w7mpasmxprsye3k0v49qknwmclwxj78rfjqu6nacq
 
 lorenzo:
   # cosmos Keyring
@@ -22,7 +22,7 @@ lorenzo:
   # lorenzo genesis file chain-id
   chain-id: lorenzod_83291-1
   # lorenzo rpc
-  rpc-addr: http://127.0.0.1:26657
+  rpc-addr: http://rpc-cosmos-testnet.lorenzo-protocol.xyz:26657
   # lorenzo cosmos account address prefix
   account-prefix: lrz
   gas-adjustment: 1.5

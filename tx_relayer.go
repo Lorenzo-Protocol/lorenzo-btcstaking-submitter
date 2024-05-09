@@ -37,19 +37,42 @@ func NewTxRelayer(db db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerCo
 
 func (r *TxRelayer) Start() error {
 	r.logger.Infof("staring tx-relayer on BTC network: %s", r.conf.NetParams)
-	depositTargetAccount := r.conf.TargetDepositAddress
-	btcReceivingAddr, err := btcutil.DecodeAddress(r.conf.TargetDepositAddress, btc.GetBTCParams(r.conf.NetParams))
+	btcReceivingAddressHex := r.conf.TargetDepositAddress
+	btcReceivingAddress, err := btcutil.DecodeAddress(r.conf.TargetDepositAddress, btc.GetBTCParams(r.conf.NetParams))
 	if err != nil {
 		r.logger.Errorf("invalid Lorenzo staking account")
 		return err
 	}
 
-	restInterval := time.Second
 	btcInterval := time.Minute
-	btcConfirmationDepth := r.conf.ConfirmationDepth
-	preHandledTxid := db.GetLastSeenBtcTxid(r.db)
+	round := 1
 	for {
-		txs, err := r.btcQuery.GetTxs(depositTargetAccount, preHandledTxid)
+		r.startSubmit(btcReceivingAddressHex, btcReceivingAddress)
+		r.logger.Infof("finish round: %d, wait for while.", round)
+		round++
+		time.Sleep(btcInterval)
+	}
+}
+
+func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddress btcutil.Address) {
+	restInterval := time.Second
+	btcConfirmationDepth := r.conf.ConfirmationDepth
+	preHandledTxid := ""
+
+	firstHandledTxid := ""
+	updateFirstHandledTxid := func(txid string) {
+		if firstHandledTxid == "" {
+			firstHandledTxid = txid
+		}
+	}
+	defer func() {
+		if firstHandledTxid != "" {
+			r.saveTxid(firstHandledTxid)
+		}
+	}()
+
+	for {
+		txs, err := r.btcQuery.GetTxs(btcReceivingAddressHex, preHandledTxid)
 		if err != nil {
 			r.logger.Errorf("failed to get txs from BTC chain, lastest txid: %s. error:%v", preHandledTxid, err)
 			time.Sleep(restInterval)
@@ -58,8 +81,7 @@ func (r *TxRelayer) Start() error {
 
 		if len(txs) == 0 {
 			r.logger.Infof("no new txs found")
-			time.Sleep(btcInterval)
-			continue
+			return
 		}
 
 		for i := 0; i < len(txs); i++ {
@@ -72,11 +94,12 @@ func (r *TxRelayer) Start() error {
 			}
 			tx := txs[i]
 			if tx.Status.BlockHeight+btcConfirmationDepth > int(btcCurrentHeight) {
-				r.logger.Debugf("tx is not finalized, txid: %s. height:%d, currentHeight:%d",
-					tx.Txid, tx.Status.BlockHeight, btcCurrentHeight)
-				i--
-				time.Sleep(btcInterval)
 				continue
+			}
+
+			if r.hasTxid(tx.Txid) {
+				//all after tx.Txid transactions has handled by submitter
+				return
 			}
 
 			txStakingRecordResp, err := r.lorenzoClient.GetBTCStakingRecord(tx.Txid)
@@ -90,6 +113,7 @@ func (r *TxRelayer) Start() error {
 				// ignore the tx that has been handled
 				r.logger.Infof("tx has been handled, txid: %s", tx.Txid)
 				preHandledTxid = tx.Txid
+				updateFirstHandledTxid(tx.Txid)
 				continue
 			}
 
@@ -109,7 +133,7 @@ func (r *TxRelayer) Start() error {
 				continue
 			}
 
-			msg, err := r.newMsgCreateBTCStaking(btcReceivingAddr, r.lorenzoClient, proofRaw, txBytes)
+			msg, err := r.newMsgCreateBTCStaking(btcReceivingAddress, r.lorenzoClient, proofRaw, txBytes)
 			if err != nil {
 				r.logger.Errorf("failed to create BTC staking message. txid:%s, error:%v", tx.Txid, err)
 				preHandledTxid = tx.Txid
@@ -126,12 +150,22 @@ func (r *TxRelayer) Start() error {
 
 			r.logger.Infof("create btc staking with btc proof successfully, txid: %s", tx.Txid)
 			preHandledTxid = tx.Txid
-			if err := db.SetLastSeenBtcTxid(r.db, tx.Txid); err != nil {
-				r.logger.Errorf("failed to save last seen btc txid:%s", tx.Txid)
-			}
 			continue
 		}
 	}
+}
+
+func (r *TxRelayer) saveTxid(txid string) {
+	if db.HasTxid(r.db, txid) || len(txid) == 0 {
+		return
+	}
+	if err := db.SetTxid(r.db, txid); err != nil {
+		r.logger.Warnf("save handled txid failed, txid: %s", txid)
+	}
+}
+
+func (r *TxRelayer) hasTxid(txid string) bool {
+	return db.HasTxid(r.db, txid)
 }
 
 func (r *TxRelayer) newMsgCreateBTCStaking(btcReceivingAddr btcutil.Address, lorenzoClient *lrzclient.Client, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
