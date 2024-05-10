@@ -23,15 +23,20 @@ type TxRelayer struct {
 	btcQuery      *btc.BTCQuery
 	lorenzoClient *lrzclient.Client
 	db            db.IDB
+
+	// btc receiving address's newest handled transaction
+	newestHandledBtcTxid string
 }
 
-func NewTxRelayer(db db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) *TxRelayer {
+func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) *TxRelayer {
 	return &TxRelayer{
 		logger:        logger,
 		conf:          conf,
 		btcQuery:      btcQuery,
 		lorenzoClient: lorenzoClient,
-		db:            db,
+		db:            database,
+
+		newestHandledBtcTxid: db.GetNewestBtcTxid(database),
 	}
 }
 
@@ -49,6 +54,7 @@ func (r *TxRelayer) Start() error {
 	for {
 		r.startSubmit(btcReceivingAddressHex, btcReceivingAddress)
 		r.logger.Infof("finish round: %d, wait for while.", round)
+		r.logger.Infof("*** %s ***", r.newestHandledBtcTxid)
 		round++
 		time.Sleep(btcInterval)
 	}
@@ -66,8 +72,9 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 		}
 	}
 	defer func() {
+		// make sure all after firstHandledTxid transactions is handled
 		if firstHandledTxid != "" {
-			r.saveTxid(firstHandledTxid)
+			r.saveNewestTxid(firstHandledTxid)
 		}
 	}()
 
@@ -84,6 +91,7 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 			return
 		}
 
+		updateFirstHandledTxid(txs[0].Txid)
 		for i := 0; i < len(txs); i++ {
 			btcCurrentHeight, err := r.btcQuery.GetBTCCurrentHeight()
 			if err != nil {
@@ -97,7 +105,7 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 				continue
 			}
 
-			if r.hasTxid(tx.Txid) {
+			if r.isNewestTxid(tx.Txid) {
 				//all after tx.Txid transactions has handled by submitter
 				return
 			}
@@ -113,7 +121,6 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 				// ignore the tx that has been handled
 				r.logger.Infof("tx has been handled, txid: %s", tx.Txid)
 				preHandledTxid = tx.Txid
-				updateFirstHandledTxid(tx.Txid)
 				continue
 			}
 
@@ -155,17 +162,15 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 	}
 }
 
-func (r *TxRelayer) saveTxid(txid string) {
-	if db.HasTxid(r.db, txid) || len(txid) == 0 {
-		return
+func (r *TxRelayer) saveNewestTxid(txid string) {
+	if err := db.SetNewestBtcTxid(r.db, txid); err != nil {
+		r.logger.Warnf("save newest handled txid failed, txid: %s", txid)
 	}
-	if err := db.SetTxid(r.db, txid); err != nil {
-		r.logger.Warnf("save handled txid failed, txid: %s", txid)
-	}
+	r.newestHandledBtcTxid = txid
 }
 
-func (r *TxRelayer) hasTxid(txid string) bool {
-	return db.HasTxid(r.db, txid)
+func (r *TxRelayer) isNewestTxid(txid string) bool {
+	return r.newestHandledBtcTxid == txid
 }
 
 func (r *TxRelayer) newMsgCreateBTCStaking(btcReceivingAddr btcutil.Address, lorenzoClient *lrzclient.Client, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {

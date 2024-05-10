@@ -126,6 +126,7 @@ func (c *BTCQuery) GetTxBytes(txid string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// GetTxs Get confirmed transaction history for the specified address, sorted with newest first. Returns 25 transactions per page
 func (c *BTCQuery) GetTxs(address string, lastSeenTxid string) ([]BtcTx, error) {
 	var txs []BtcTx
 	url := c.apiEndpoint + "/address/" + address + "/txs/chain"
