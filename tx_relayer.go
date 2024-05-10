@@ -91,7 +91,6 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 			return
 		}
 
-		updateFirstHandledTxid(txs[0].Txid)
 		for i := 0; i < len(txs); i++ {
 			btcCurrentHeight, err := r.btcQuery.GetBTCCurrentHeight()
 			if err != nil {
@@ -121,6 +120,7 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 				// ignore the tx that has been handled
 				r.logger.Infof("tx has been handled, txid: %s", tx.Txid)
 				preHandledTxid = tx.Txid
+				updateFirstHandledTxid(tx.Txid)
 				continue
 			}
 
@@ -144,6 +144,7 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 			if err != nil {
 				r.logger.Errorf("failed to create BTC staking message. txid:%s, error:%v", tx.Txid, err)
 				preHandledTxid = tx.Txid
+				updateFirstHandledTxid(tx.Txid)
 				continue
 			}
 
@@ -157,6 +158,7 @@ func (r *TxRelayer) startSubmit(btcReceivingAddressHex string, btcReceivingAddre
 
 			r.logger.Infof("create btc staking with btc proof successfully, txid: %s", tx.Txid)
 			preHandledTxid = tx.Txid
+			updateFirstHandledTxid(tx.Txid)
 			continue
 		}
 	}
