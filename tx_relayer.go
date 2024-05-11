@@ -50,12 +50,9 @@ func (r *TxRelayer) Start() error {
 	}
 
 	btcInterval := time.Minute
-	round := 1
 	for {
 		r.startSubmit(btcReceivingAddressHex, btcReceivingAddress)
-		r.logger.Infof("finish round: %d, wait for while.", round)
 		r.logger.Infof("*** %s ***", r.newestHandledBtcTxid)
-		round++
 		time.Sleep(btcInterval)
 	}
 }

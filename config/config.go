@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	MinConfirmationDepth = 6
+	MinConfirmationDepth = 1
 )
 
 type Config struct {
