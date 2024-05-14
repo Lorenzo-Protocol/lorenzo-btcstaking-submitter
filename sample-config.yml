@@ -3,7 +3,7 @@ logLevel: debug
 dbDir: ./.testnet/db
 # BTC blockstream api
 # https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: http://45.32.123.167:8081/testnet/api
+btcApiEndpoint: https://btc-rpc-testnet.lorenzo-protocol.xyz/testnet/api
 
 tx-relayer:
   confirmationDepth: 6
