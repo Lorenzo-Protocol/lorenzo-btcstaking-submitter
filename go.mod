@@ -36,7 +36,11 @@ require (
 	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240516053400-4c88d372ca31
 )
 
-require github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
+require (
+	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	gorm.io/driver/mysql v1.5.6
+	gorm.io/gorm v1.25.10
+)
 
 require (
 	cloud.google.com/go v0.111.0 // indirect
@@ -221,8 +225,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/mysql v1.5.6 // indirect
-	gorm.io/gorm v1.25.10 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
 	pgregory.net/rapid v1.1.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

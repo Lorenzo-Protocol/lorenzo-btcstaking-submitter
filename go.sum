@@ -213,11 +213,8 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1 h1:MnYOjaXsn1XkcsLyiTBFC7lDRLfx/LhaSm0ZkJ8PNmM=
 github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1/go.mod h1:JEhGmVj5rZX5bTfOqh3nltE2N6+qMI4HVNV2vW6PpOQ=
-github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f h1:4KnWSCATv4wJM+4Rxg54LIUtRdiPw8yQLGMQqmKPDMg=
-github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f/go.mod h1:U2SWigR1rqAsFdc1qrKFhysjUMRNC1MLxApvemQosvQ=
+github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240516045252-6d9aa198bb0e h1:ntePz0gTvP7cusrq1X/LeA2/8QfAwv6iRL+1nb1FaPk=
 github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240516045252-6d9aa198bb0e/go.mod h1:hoPkZ826BbJn7B3cAi22c+0mMGSosq6Z9RCAv7D1oKs=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc h1:uLreiYwOGBfOJFM5Fcjf09SgNDRDVSb9Fh0sgOwyYcM=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc/go.mod h1:Up9VePLBzVncN1LhwQDgULdzwNhqEg23FhLVmXsAA+w=
 github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240516053400-4c88d372ca31 h1:YZDLmv6GlgHW6lXOMws5mn1rm3C9OVZDR42Oc0F3tEA=
 github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240516053400-4c88d372ca31/go.mod h1:b/J6aZ//vFVed2Bv0hlCay1aC/5i5Xy7H5VZVBQ+L3U=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=

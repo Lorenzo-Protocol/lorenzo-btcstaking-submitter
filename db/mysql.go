@@ -1,11 +1,15 @@
 package db
 
 import (
+	"errors"
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"math/big"
 	"strconv"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 )
 
 const submitterBtcSyncPointKey = "submitter-btc-sync-point"
@@ -22,8 +26,8 @@ type MysqlDB struct {
 	syncPointKey string
 }
 
-func NewMysqlDB(host string, port int, user string, password string, dbname string) (*MysqlDB, error) {
-	dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, password, host, port, dbname)
+func NewMysqlDB(cfg config.Database) (*MysqlDB, error) {
+	dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
 	db, err := gorm.Open(mysql.Open(dns), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -60,14 +64,38 @@ func (db *MysqlDB) GetSyncPoint() (uint64, error) {
 	return syncPoint, nil
 }
 
-func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) error {
+func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
+	dbtx := db.db.Begin()
+
+	defer func() {
+		if err != nil {
+			dbtx.Rollback()
+			return
+		}
+
+		dbtx.Commit()
+	}()
+
+	for _, tx := range txs {
+		result := dbtx.Create(tx)
+		if result.Error != nil && !errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return err
+		}
+	}
 	return nil
 }
 
 func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
-	return []*BtcDepositTx{}, nil
+	var txs []*BtcDepositTx
+	err := db.db.Model(&BtcDepositTx{}).Where("status = ?", StatusPending).Find(&txs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return txs, nil
 }
 
 func (db *MysqlDB) UpdateTxStatus(txid string, status int) error {
-	return nil
+	result := db.db.Model(&BtcDepositTx{}).Where("txid = ?", txid).Update("status", status)
+	return result.Error
 }

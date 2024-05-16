@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"sync"
+	"time"
+
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
 	lrztypes "github.com/Lorenzo-Protocol/lorenzo/types"
 	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/keeper"
@@ -12,7 +15,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"go.uber.org/zap"
-	"time"
 
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
@@ -33,6 +35,8 @@ type TxRelayer struct {
 	receivers []*types.Receiver
 	// current synchronize point
 	syncPoint uint64
+
+	wg sync.WaitGroup
 }
 
 func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
@@ -40,6 +44,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	if err != nil {
 		return nil, err
 	}
+
 	syncPoint, err := database.GetSyncPoint()
 	if err != nil {
 		return nil, err
@@ -62,6 +67,8 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		receivers: receivers,
 		syncPoint: syncPoint,
 		submitter: lorenzoClient.MustGetAddr(),
+
+		wg: sync.WaitGroup{},
 	}
 
 	logger.Infof("new txRelayer on BTC network: %s", conf.NetParams)
@@ -69,11 +76,17 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 }
 
 func (r *TxRelayer) Start() error {
+	r.wg.Add(2)
+	go r.scanBlockLoop()
+	go r.submitLoop()
 
+	r.wg.Wait()
 	return nil
 }
 
 func (r *TxRelayer) scanBlockLoop() {
+	defer r.wg.Done()
+
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
@@ -98,17 +111,23 @@ func (r *TxRelayer) scanBlockLoop() {
 
 		depositTxs := r.getValidDepositTxs(wantToGetBlockHeight, msgBlock)
 		if err := r.db.InsertBtcDepositTxs(depositTxs); err != nil {
-			r.logger.Errorf("Failed to ")
+			r.logger.Errorf("Failed to insert btc deposit txs, error: %v", err)
 			continue
 		}
 
 		if err := r.updateSyncPoint(wantToGetBlockHeight); err != nil {
-
+			r.logger.Errorf("Failed to update sync point, point:%d, error: %v", wantToGetBlockHeight, err)
+			time.Sleep(connectErrWaitInterval)
+			continue
 		}
+
+		r.logger.Infof("Handled block: %d", wantToGetBlockHeight)
 	}
 }
 
 func (r *TxRelayer) submitLoop() {
+	defer r.wg.Done()
+
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
@@ -174,6 +193,8 @@ func (r *TxRelayer) submitLoop() {
 			if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
 				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 			}
+
+			r.logger.Infof("Submitted btc staking tx, txid: %s", tx.Txid)
 			i++
 		}
 	}

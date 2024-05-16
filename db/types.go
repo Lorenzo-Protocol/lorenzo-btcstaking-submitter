@@ -20,12 +20,12 @@ func (ConfigTable) TableName() string {
 }
 
 type BtcDepositTx struct {
-	Receiver        string
-	ReceiverAddress string
+	Receiver        string `gorm:"size:256"`
+	ReceiverAddress string `gorm:"size:256"`
 	Value           uint64
-	Txid            string
+	Txid            string `gorm:"size:256, uniqueIndex"`
 	Height          uint64
-	BlockHash       string
+	BlockHash       string `gorm:"size:256"`
 	Status          int
 
 	BaseTable

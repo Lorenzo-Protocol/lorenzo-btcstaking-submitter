@@ -20,6 +20,16 @@ type Config struct {
 	LogLevel       string               `mapstructure:"logLevel"`
 	Lorenzo        lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 	TxRelayer      TxRelayerConfig      `mapstructure:"tx-relayer"`
+
+	Database Database `mapstructure:"database"`
+}
+
+type Database struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
 }
 
 type TxRelayerConfig struct {

@@ -12,14 +12,14 @@ import (
 
 func main() {
 	var configFile string
-	flag.StringVar(&configFile, "config", "./sample-config.yml", "config file")
+	flag.StringVar(&configFile, "config", "./.testnet/sample-config.yml", "config file")
 	flag.Parse()
 
 	cfg, err := config.NewConfig(configFile)
 	if err != nil {
 		panic(err)
 	}
-	database, err := db.NewLevelDB(cfg.DBDir)
+	database, err := db.NewMysqlDB(cfg.Database)
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +37,10 @@ func main() {
 	}
 	logger := parentLogger.With().Sugar()
 
-	txRelayer := NewTxRelayer(database, logger, &cfg.TxRelayer, btcQuery, lorenzoClient)
+	txRelayer, err := NewTxRelayer(database, logger, &cfg.TxRelayer, btcQuery, lorenzoClient)
+	if err != nil {
+		panic(err)
+	}
 	if err := txRelayer.Start(); err != nil {
 		panic(err)
 	}
