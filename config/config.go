@@ -23,17 +23,13 @@ type Config struct {
 }
 
 type TxRelayerConfig struct {
-	ConfirmationDepth    int    `mapstructure:"confirmationDepth"`
-	NetParams            string `mapstructure:"netParams"`
-	TargetDepositAddress string `mapstructure:"targetDepositAddress"`
+	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
+	NetParams         string `mapstructure:"netParams"`
 }
 
 func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth < MinConfirmationDepth {
 		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
-	}
-	if cfg.TargetDepositAddress == "" {
-		return errors.New("targetDepositAddress must be set")
 	}
 
 	return nil

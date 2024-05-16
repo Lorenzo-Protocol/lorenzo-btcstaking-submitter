@@ -3,7 +3,6 @@ package btc
 import (
 	"bytes"
 	"fmt"
-
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -71,4 +70,12 @@ func GetBTCParams(net string) *chaincfg.Params {
 	default:
 		return &chaincfg.SigNetParams
 	}
+}
+
+func MustDecodeAddress(addr string, netParam *chaincfg.Params) btcutil.Address {
+	btcAddr, err := btcutil.DecodeAddress(addr, netParam)
+	if err != nil {
+		panic(err)
+	}
+	return btcAddr
 }

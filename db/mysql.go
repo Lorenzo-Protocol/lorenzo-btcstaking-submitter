@@ -1,28 +1,25 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"time"
+	"math/big"
+	"strconv"
 )
 
-type ConfigTable struct {
-	Id    int
-	Name  string
-	Value string
+const submitterBtcSyncPointKey = "submitter-btc-sync-point"
 
-	UpdatedTime time.Time `gorm:"autoUpdateTime"`
-	CreatedTime time.Time `gorm:"autoCreateTime"`
-}
-
-func (ConfigTable) TableName() string {
-	return "config"
-}
+const (
+	StatusPending = 0
+	StatusHandled = 1
+	StatusInvalid = 2
+)
 
 type MysqlDB struct {
 	db *gorm.DB
+
+	syncPointKey string
 }
 
 func NewMysqlDB(host string, port int, user string, password string, dbname string) (*MysqlDB, error) {
@@ -33,42 +30,44 @@ func NewMysqlDB(host string, port int, user string, password string, dbname stri
 	}
 
 	mysqlDb := &MysqlDB{
-		db: db,
+		db:           db,
+		syncPointKey: submitterBtcSyncPointKey,
 	}
 
 	return mysqlDb, nil
 }
 
-func (db *MysqlDB) Put(key []byte, value []byte) error {
+func (db *MysqlDB) UpdateSyncPoint(height uint64) error {
 	var cfg ConfigTable
-	cfg.Name = string(key)
-	cfg.Value = string(value)
+	cfg.Name = db.syncPointKey
+	cfg.Value = big.NewInt(0).SetUint64(height).String()
 
-	results := db.db.Model(&ConfigTable{}).Where("name = ?", string(key)).First(&cfg)
-	if results.Error != nil {
-		if errors.Is(results.Error, gorm.ErrRecordNotFound) {
-			return db.db.Create(&cfg).Error
-		}
+	return db.db.Model(&ConfigTable{}).Where("name = ? and value<?", cfg.Name, cfg.Value).Updates(cfg).Error
+}
+
+func (db *MysqlDB) GetSyncPoint() (uint64, error) {
+	var cfg ConfigTable
+	result := db.db.Model(&ConfigTable{}).Where("name = ?", db.syncPointKey).First(&cfg)
+	if result.Error != nil {
+		return 0, nil
 	}
 
-	return db.db.Model(&ConfigTable{}).Where("name = ?", cfg.Name).Updates(cfg).Error
-}
-
-func (db *MysqlDB) Delete(key []byte) error {
-	return db.db.Model(&ConfigTable{}).Where("name = ?", string(key)).Delete(&ConfigTable{}).Error
-}
-
-func (db *MysqlDB) Has(key []byte) (bool, error) {
-	err := db.db.Model(&ConfigTable{}).Where("name = ?", string(key)).First(&ConfigTable{}).Error
-	return err == nil, err
-}
-
-func (db *MysqlDB) Get(key []byte) ([]byte, error) {
-	var cfg ConfigTable
-	err := db.db.Model(&ConfigTable{}).Where("name = ?", string(key)).First(&cfg).Error
+	syncPoint, err := strconv.ParseUint(cfg.Value, 10, 64)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return []byte(cfg.Value), nil
+	return syncPoint, nil
+}
+
+func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) error {
+	return nil
+}
+
+func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
+	return []*BtcDepositTx{}, nil
+}
+
+func (db *MysqlDB) UpdateTxStatus(txid string, status int) error {
+	return nil
 }
