@@ -32,8 +32,8 @@ require (
 )
 
 require (
-	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc
+	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240516045252-6d9aa198bb0e
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240516053400-4c88d372ca31
 )
 
 require github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
