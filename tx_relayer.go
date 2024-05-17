@@ -71,7 +71,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		wg: sync.WaitGroup{},
 	}
 
-	logger.Infof("new txRelayer on BTC network: %s", conf.NetParams)
+	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d", conf.NetParams, conf.ConfirmationDepth)
 	return txRelayer, nil
 }
 
