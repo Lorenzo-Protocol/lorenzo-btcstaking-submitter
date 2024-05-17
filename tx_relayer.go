@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
@@ -9,6 +10,9 @@ import (
 	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/keeper"
 	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/types"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"go.uber.org/zap"
 
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
@@ -17,129 +21,273 @@ import (
 )
 
 type TxRelayer struct {
-	logger *zap.SugaredLogger
-	conf   *config.TxRelayerConfig
+	logger            *zap.SugaredLogger
+	confirmationDepth uint64
+
+	btcParam  *chaincfg.Params
+	submitter string
 
 	btcQuery      *btc.BTCQuery
 	lorenzoClient *lrzclient.Client
 	db            db.IDB
+
+	// btc deposit tx receiver
+	receivers []*types.Receiver
+	// current synchronize point
+	syncPoint uint64
+
+	wg sync.WaitGroup
 }
 
-func NewTxRelayer(db db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) *TxRelayer {
-	return &TxRelayer{
-		logger:        logger,
-		conf:          conf,
-		btcQuery:      btcQuery,
-		lorenzoClient: lorenzoClient,
-		db:            db,
+func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+	btcStakingParams, err := lorenzoClient.QueryBTCStakingParams()
+	if err != nil {
+		return nil, err
 	}
+
+	syncPoint, err := database.GetSyncPoint()
+	if err != nil {
+		return nil, err
+	}
+	btcParam := btc.GetBTCParams(conf.NetParams)
+
+	receivers := make([]*types.Receiver, 0, len(btcStakingParams.Params.Receivers))
+	for _, receiver := range btcStakingParams.Params.Receivers {
+		receivers = append(receivers, receiver)
+	}
+
+	txRelayer := &TxRelayer{
+		logger:            logger,
+		confirmationDepth: conf.ConfirmationDepth,
+		btcQuery:          btcQuery,
+		lorenzoClient:     lorenzoClient,
+		db:                database,
+		btcParam:          btcParam,
+
+		receivers: receivers,
+		syncPoint: syncPoint,
+		submitter: lorenzoClient.MustGetAddr(),
+
+		wg: sync.WaitGroup{},
+	}
+
+	logger.Infof("new txRelayer on BTC network: %s", conf.NetParams)
+	return txRelayer, nil
 }
 
 func (r *TxRelayer) Start() error {
-	r.logger.Infof("staring tx-relayer on BTC network: %s", r.conf.NetParams)
-	depositTargetAccount := r.conf.TargetDepositAddress
-	btcReceivingAddr, err := btcutil.DecodeAddress(r.conf.TargetDepositAddress, btc.GetBTCParams(r.conf.NetParams))
-	if err != nil {
-		r.logger.Errorf("invalid Lorenzo staking account")
-		return err
-	}
+	r.wg.Add(2)
+	go func() {
+		defer r.wg.Done()
+		r.scanBlockLoop()
+	}()
+	go func() {
+		defer r.wg.Done()
+		go r.submitLoop()
+	}()
 
-	restInterval := time.Second
+	r.wg.Wait()
+	return nil
+}
+
+func (r *TxRelayer) scanBlockLoop() {
+	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
-	btcConfirmationDepth := r.conf.ConfirmationDepth
-	preHandledTxid := db.GetLastSeenBtcTxid(r.db)
 	for {
-		txs, err := r.btcQuery.GetTxs(depositTargetAccount, preHandledTxid)
+		btcTip, err := r.btcQuery.GetBTCCurrentHeight()
 		if err != nil {
-			r.logger.Errorf("failed to get txs from BTC chain, lastest txid: %s. error:%v", preHandledTxid, err)
-			time.Sleep(restInterval)
+			r.logger.Errorf("Failed to get btc tip, error: %v", err)
+			time.Sleep(connectErrWaitInterval)
 			continue
 		}
-
-		if len(txs) == 0 {
-			r.logger.Infof("no new txs found")
+		if btcTip <= r.syncPoint+r.confirmationDepth {
 			time.Sleep(btcInterval)
 			continue
 		}
 
-		for i := 0; i < len(txs); i++ {
-			btcCurrentHeight, err := r.btcQuery.GetBTCCurrentHeight()
-			if err != nil {
-				r.logger.Warnf("failed to get BTC current height. error:%v", err)
-				i--
-				time.Sleep(restInterval)
-				continue
-			}
-			tx := txs[i]
-			if tx.Status.BlockHeight+btcConfirmationDepth > int(btcCurrentHeight) {
-				r.logger.Debugf("tx is not finalized, txid: %s. height:%d, currentHeight:%d",
-					tx.Txid, tx.Status.BlockHeight, btcCurrentHeight)
-				i--
-				time.Sleep(btcInterval)
-				continue
-			}
+		wantToGetBlockHeight := r.syncPoint + 1
+		msgBlock, err := r.btcQuery.GetBlockByHeight(wantToGetBlockHeight)
+		if err != nil {
+			r.logger.Errorf("Failed to get btc block: %v", err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
 
+		depositTxs := r.getValidDepositTxs(wantToGetBlockHeight, msgBlock)
+		if err := r.db.InsertBtcDepositTxs(depositTxs); err != nil {
+			r.logger.Errorf("Failed to insert btc deposit txs, error: %v", err)
+			continue
+		}
+
+		if err := r.updateSyncPoint(wantToGetBlockHeight); err != nil {
+			r.logger.Errorf("Failed to update sync point, point:%d, error: %v", wantToGetBlockHeight, err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
+
+		r.logger.Infof("Handled block: %d", wantToGetBlockHeight)
+	}
+}
+
+func (r *TxRelayer) submitLoop() {
+	connectErrWaitInterval := time.Second
+	btcInterval := time.Minute
+	for {
+		txs, err := r.db.GetUnhandledBtcDepositTxs()
+		if err != nil {
+			r.logger.Errorf("Failed to get unhandled btc deposit txs, error: %v", err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
+
+		if len(txs) == 0 {
+			r.logger.Infof("No unhandled btc deposit txs")
+			time.Sleep(btcInterval)
+			continue
+		}
+
+		i := 0
+		for i < len(txs) {
+			tx := txs[i]
 			txStakingRecordResp, err := r.lorenzoClient.GetBTCStakingRecord(tx.Txid)
 			if err != nil {
-				r.logger.Warnf("failed to get tx staking record from lorenzo, error:%v, txid: %s", err, tx.Txid)
-				i--
-				time.Sleep(restInterval)
+				r.logger.Errorf("Failed to get btc staking record, txid: %s, error: %v", tx.Txid, err)
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 			if txStakingRecordResp.Record != nil {
-				// ignore the tx that has been handled
-				r.logger.Infof("tx has been handled, txid: %s", tx.Txid)
-				preHandledTxid = tx.Txid
+				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
+				}
+				i++
 				continue
 			}
 
 			proofRaw, err := r.btcQuery.GetTxBlockProof(tx.Txid)
 			if err != nil {
-				r.logger.Errorf("failed to get block proof from BTC chain, txid: %s. error:%v",
-					tx.Txid, err)
-				i--
-				time.Sleep(restInterval)
+				r.logger.Errorf("Failed to get btc tx proof, txid: %s, error: %v", tx.Txid, err)
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 			txBytes, err := r.btcQuery.GetTxBytes(tx.Txid)
 			if err != nil {
-				r.logger.Errorf("failed to get tx bytes from BTC chain, txid: %s. error: %v", tx.Txid, err)
-				i--
-				time.Sleep(restInterval)
+				r.logger.Errorf("Failed to get btc tx bytes, txid: %s, error:%v", tx.Txid, err)
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 
-			msg, err := r.newMsgCreateBTCStaking(btcReceivingAddr, r.lorenzoClient, proofRaw, txBytes)
+			msg, err := r.newMsgCreateBTCStaking(tx.Receiver, tx.ReceiverAddress, r.submitter, proofRaw, txBytes)
 			if err != nil {
-				r.logger.Errorf("failed to create BTC staking message. txid:%s, error:%v", tx.Txid, err)
-				preHandledTxid = tx.Txid
+				r.logger.Errorf("Failed to create msgCreateBTCStaking: %v", err)
+				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusInvalid); err != nil {
+					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
+				}
+				i++ // skip this tx
 				continue
 			}
 
 			_, err = r.lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
 			if err != nil {
-				r.logger.Errorf("failed to submit BTC staking message. txid:%s, error:%v", tx.Txid, err)
-				i--
-				time.Sleep(restInterval)
+				r.logger.Errorf("Failed to create btc staking with btc proof, error: %v", err)
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 
-			r.logger.Infof("create btc staking with btc proof successfully, txid: %s", tx.Txid)
-			preHandledTxid = tx.Txid
-			if err := db.SetLastSeenBtcTxid(r.db, tx.Txid); err != nil {
-				r.logger.Errorf("failed to save last seen btc txid:%s", tx.Txid)
+			if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 			}
-			continue
+
+			r.logger.Infof("Submitted btc staking tx, txid: %s", tx.Txid)
+			i++
 		}
 	}
 }
 
-func (r *TxRelayer) newMsgCreateBTCStaking(btcReceivingAddr btcutil.Address, lorenzoClient *lrzclient.Client, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
+func (r *TxRelayer) updateSyncPoint(newPoint uint64) error {
+	if err := r.db.UpdateSyncPoint(newPoint); err != nil {
+		return err
+	}
+
+	r.syncPoint = newPoint
+	return nil
+}
+
+func (r *TxRelayer) getValidDepositTxs(blockHeight uint64, msgBlock *wire.MsgBlock) []*db.BtcDepositTx {
+	var depositTxs []*db.BtcDepositTx
+
+MainLoop:
+	for _, tx := range msgBlock.Transactions {
+		for _, out := range tx.TxOut {
+			pkScript, err := txscript.ParsePkScript(out.PkScript)
+			if err != nil {
+				continue
+			}
+
+			txid := tx.TxHash().String()
+			receiverAddr, err := pkScript.Address(r.btcParam)
+			if err != nil {
+				continue
+			}
+			if !r.IsValidDepositReceiver(receiverAddr.String()) {
+				continue
+			}
+
+			//pick only one valid receiver check
+			value, _, err := btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
+			if err != nil {
+				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
+				continue MainLoop
+			}
+
+			depositTx := &db.BtcDepositTx{
+				Receiver:        r.GetReceiverNameByAddress(receiverAddr.String()),
+				ReceiverAddress: receiverAddr.String(),
+				Amount:          value,
+				Txid:            txid,
+				Height:          blockHeight,
+				BlockHash:       msgBlock.BlockHash().String(),
+				Status:          db.StatusPending,
+				Timestamp:       msgBlock.Header.Timestamp,
+			}
+			depositTxs = append(depositTxs, depositTx)
+			continue MainLoop
+		}
+	}
+
+	return depositTxs
+}
+
+func (r *TxRelayer) GetReceiverNameByAddress(addr string) string {
+	for _, receiver := range r.receivers {
+		if receiver.Addr == addr {
+			return receiver.Name
+		}
+	}
+
+	return ""
+}
+
+func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
+	for _, receiver := range r.receivers {
+		if receiver.Addr == addr {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *TxRelayer) newMsgCreateBTCStaking(receiver string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
+	receiverAddress, err := btcutil.DecodeAddress(receiverAddressHex, r.btcParam)
+	if err != nil {
+		return nil, err
+	}
+
 	stakingMsgTx, err := btc.NewBTCTxFromBytes(txBytes)
 	if err != nil {
 		return nil, err
 	}
-	_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, btcReceivingAddr)
+	_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, receiverAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +306,8 @@ func (r *TxRelayer) newMsgCreateBTCStaking(btcReceivingAddr btcutil.Address, lor
 	}
 
 	msg := &types.MsgCreateBTCStaking{
-		Signer: lorenzoClient.MustGetAddr(),
+		Signer:   submitterAddressHex,
+		Receiver: receiver, // receiver name
 		StakingTx: &types.TransactionInfo{
 			Key: &types.TransactionKey{
 				Index: txIndex,

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	MinConfirmationDepth = 6
+	MinConfirmationDepth = 1
 )
 
 type Config struct {
@@ -20,20 +20,26 @@ type Config struct {
 	LogLevel       string               `mapstructure:"logLevel"`
 	Lorenzo        lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 	TxRelayer      TxRelayerConfig      `mapstructure:"tx-relayer"`
+
+	Database Database `mapstructure:"database"`
+}
+
+type Database struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
 }
 
 type TxRelayerConfig struct {
-	ConfirmationDepth    int    `mapstructure:"confirmationDepth"`
-	NetParams            string `mapstructure:"netParams"`
-	TargetDepositAddress string `mapstructure:"targetDepositAddress"`
+	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
+	NetParams         string `mapstructure:"netParams"`
 }
 
 func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth < MinConfirmationDepth {
 		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
-	}
-	if cfg.TargetDepositAddress == "" {
-		return errors.New("targetDepositAddress must be set")
 	}
 
 	return nil

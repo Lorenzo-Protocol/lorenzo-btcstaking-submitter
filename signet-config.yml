@@ -2,12 +2,12 @@
 logLevel: debug
 # BTC blockstream api
 # https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: https://btc-rpc-testnet.lorenzo-protocol.xyz/testnet/api
+btcApiEndpoint: https://btc-rpc-signet.lorenzo-protocol.xyz/signet/api
 
 tx-relayer:
-  confirmationDepth: 6
+  confirmationDepth: 1
   # BTC network type:mainet/testnet/signet
-  netParams: testnet
+  netParams: signet
 
 database:
   host:

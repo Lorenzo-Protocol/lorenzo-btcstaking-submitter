@@ -32,11 +32,15 @@ require (
 )
 
 require (
-	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240408083236-f611177cf39f
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240415105618-9b826dd4b1bc
+	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240517025956-0a52d3e36f78
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240517030816-df69bba6e890
 )
 
-require github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
+require (
+	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	gorm.io/driver/mysql v1.5.6
+	gorm.io/gorm v1.25.10
+)
 
 require (
 	cloud.google.com/go v0.111.0 // indirect
@@ -101,6 +105,7 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -139,6 +144,8 @@ require (
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b // indirect

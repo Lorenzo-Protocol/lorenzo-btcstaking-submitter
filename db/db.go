@@ -1,9 +1,9 @@
 package db
 
 type IDB interface {
-	Put(key []byte, value []byte) error
-	Delete(key []byte) error
-
-	Has(key []byte) (bool, error)
-	Get(key []byte) ([]byte, error)
+	UpdateSyncPoint(height uint64) error
+	GetSyncPoint() (uint64, error)
+	InsertBtcDepositTxs(txs []*BtcDepositTx) error
+	GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error)
+	UpdateTxStatus(txid string, status int) error
 }
