@@ -2,7 +2,7 @@
 logLevel: debug
 # BTC blockstream api
 # https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: https://btc-rpc-testnet.lorenzo-protocol.xyz/testnet/api
+btcApiEndpoint: ~
 
 tx-relayer:
   confirmationDepth: 6
@@ -27,7 +27,7 @@ lorenzo:
   # lorenzo genesis file chain-id
   chain-id: lorenzod_83291-1
   # lorenzo rpc
-  rpc-addr: http://rpc-cosmos-testnet.lorenzo-protocol.xyz:26657
+  rpc-addr: ~
   # lorenzo cosmos account address prefix
   account-prefix: lrz
   gas-adjustment: 1.5
