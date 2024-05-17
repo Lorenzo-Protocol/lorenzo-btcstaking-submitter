@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"sync"
 	"time"
@@ -24,8 +23,9 @@ import (
 type TxRelayer struct {
 	logger            *zap.SugaredLogger
 	confirmationDepth uint64
-	btcParam          *chaincfg.Params
-	submitter         string
+
+	btcParam  *chaincfg.Params
+	submitter string
 
 	btcQuery      *btc.BTCQuery
 	lorenzoClient *lrzclient.Client
@@ -230,13 +230,6 @@ MainLoop:
 			}
 			if !r.IsValidDepositReceiver(receiverAddr.String()) {
 				continue
-			}
-
-			var txBytesBuf bytes.Buffer
-			err = tx.Deserialize(&txBytesBuf)
-			if err != nil {
-				// impossible to occur
-				panic(err)
 			}
 
 			//pick only one valid receiver check

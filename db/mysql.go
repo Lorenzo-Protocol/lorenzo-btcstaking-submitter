@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 )
 
-const submitterBtcSyncPointKey = "submitter-btc-sync-point"
+const submitterBtcSyncPointKey = "submitter/btc-sync-point"
 
 const (
 	StatusPending = 0
@@ -28,7 +28,9 @@ type MysqlDB struct {
 
 func NewMysqlDB(cfg config.Database) (*MysqlDB, error) {
 	dns := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-	db, err := gorm.Open(mysql.Open(dns), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dns), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +78,16 @@ func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
 		dbtx.Commit()
 	}()
 
-	isDuplicateEntryErrorFunc := func(err error) bool {
-		return err != nil && strings.Contains(err.Error(), "Duplicate entry")
-	}
-
 	for _, tx := range txs {
+		//check tx is already exist
+		if ok, err := db.hasDepositTxByTxid(dbtx, tx.Txid); err != nil {
+			return err
+		} else if ok {
+			continue
+		}
+
 		err := dbtx.Create(tx).Error
-		if err != nil && !isDuplicateEntryErrorFunc(err) {
+		if err != nil {
 			return err
 		}
 	}
@@ -104,4 +109,14 @@ func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
 func (db *MysqlDB) UpdateTxStatus(txid string, status int) error {
 	result := db.db.Model(&BtcDepositTx{}).Where("txid = ?", txid).Update("status", status)
 	return result.Error
+}
+
+func (db *MysqlDB) hasDepositTxByTxid(dbtx *gorm.DB, txid string) (bool, error) {
+	var count int64
+	result := dbtx.Model(&BtcDepositTx{}).Where("txid = ?", txid).Count(&count)
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return count > 0, nil
 }
