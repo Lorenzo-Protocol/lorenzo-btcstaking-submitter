@@ -32,8 +32,8 @@ require (
 )
 
 require (
-	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240516045252-6d9aa198bb0e
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240516053400-4c88d372ca31
+	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240517025956-0a52d3e36f78
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240517030816-df69bba6e890
 )
 
 require (
