@@ -109,14 +109,14 @@ func (r *TxRelayer) scanBlockLoop() {
 		wantToGetBlockHeight := r.syncPoint + 1
 		msgBlock, err := r.btcQuery.GetBlockByHeight(wantToGetBlockHeight)
 		if err != nil {
-			r.logger.Errorf("Failed to get btc block: %v", err)
+			r.logger.Errorf("Failed to get btc block: %d, err: %v", wantToGetBlockHeight, err)
 			time.Sleep(connectErrWaitInterval)
 			continue
 		}
 
 		depositTxs := r.getValidDepositTxs(wantToGetBlockHeight, msgBlock)
 		if err := r.db.InsertBtcDepositTxs(depositTxs); err != nil {
-			r.logger.Errorf("Failed to insert btc deposit txs, error: %v", err)
+			r.logger.Errorf("Failed to insert btc deposit txs,blockHeight:%d, error: %v", wantToGetBlockHeight, err)
 			continue
 		}
 
