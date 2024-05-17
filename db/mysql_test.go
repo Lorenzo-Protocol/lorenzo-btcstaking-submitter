@@ -2,9 +2,9 @@ package db
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+	"testing"
+	"time"
 )
 
 func TestMysqlDB_GetSyncPoint(t *testing.T) {
@@ -29,6 +29,18 @@ func TestMysqlDB_GetSyncPoint(t *testing.T) {
 	}
 
 	if _, err := mysqlDB.GetUnhandledBtcDepositTxs(); err != nil {
+		t.Fatal(err)
+	}
+
+	depositTx := &BtcDepositTx{
+		Txid:      "0x12ab",
+		Timestamp: time.Now(),
+	}
+	if err := mysqlDB.InsertBtcDepositTxs([]*BtcDepositTx{depositTx}); err != nil {
+		t.Fatal(err)
+	}
+	// Duplicate insert
+	if err := mysqlDB.InsertBtcDepositTxs([]*BtcDepositTx{depositTx}); err != nil {
 		t.Fatal(err)
 	}
 }

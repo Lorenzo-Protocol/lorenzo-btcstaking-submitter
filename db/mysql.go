@@ -1,10 +1,10 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -76,18 +76,24 @@ func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
 		dbtx.Commit()
 	}()
 
+	isDuplicateEntryErrorFunc := func(err error) bool {
+		return err != nil && strings.Contains(err.Error(), "Duplicate entry")
+	}
+
 	for _, tx := range txs {
-		result := dbtx.Create(tx)
-		if result.Error != nil && !errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+		err := dbtx.Create(tx).Error
+		if err != nil && !isDuplicateEntryErrorFunc(err) {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
 	var txs []*BtcDepositTx
-	err := db.db.Model(&BtcDepositTx{}).Where("status = ?", StatusPending).Find(&txs).Error
+	err := db.db.Model(&BtcDepositTx{}).Where("status = ?", StatusPending).
+		Order("timestamp ASC").Limit(50).Find(&txs).Error
 	if err != nil {
 		return nil, err
 	}

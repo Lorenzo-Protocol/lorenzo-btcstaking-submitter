@@ -139,6 +139,7 @@ func (r *TxRelayer) submitLoop() {
 		}
 
 		if len(txs) == 0 {
+			r.logger.Infof("No unhandled btc deposit txs")
 			time.Sleep(btcInterval)
 			continue
 		}
@@ -246,11 +247,12 @@ MainLoop:
 			depositTx := &db.BtcDepositTx{
 				Receiver:        r.GetReceiverNameByAddress(receiverAddr.String()),
 				ReceiverAddress: receiverAddr.String(),
-				Value:           value,
+				Amount:          value,
 				Txid:            txid,
 				Height:          blockHeight,
 				BlockHash:       msgBlock.BlockHash().String(),
-				Status:          0,
+				Status:          db.StatusPending,
+				Timestamp:       msgBlock.Header.Timestamp,
 			}
 			depositTxs = append(depositTxs, depositTx)
 			continue MainLoop
