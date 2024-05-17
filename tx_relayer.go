@@ -77,16 +77,20 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 
 func (r *TxRelayer) Start() error {
 	r.wg.Add(2)
-	go r.scanBlockLoop()
-	go r.submitLoop()
+	go func() {
+		defer r.wg.Done()
+		r.scanBlockLoop()
+	}()
+	go func() {
+		defer r.wg.Done()
+		go r.submitLoop()
+	}()
 
 	r.wg.Wait()
 	return nil
 }
 
 func (r *TxRelayer) scanBlockLoop() {
-	defer r.wg.Done()
-
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
@@ -126,8 +130,6 @@ func (r *TxRelayer) scanBlockLoop() {
 }
 
 func (r *TxRelayer) submitLoop() {
-	defer r.wg.Done()
-
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {

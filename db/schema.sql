@@ -12,7 +12,6 @@ CREATE TABLE `btc_deposit_tx` (
   `created_time` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY (`txid`),
-  KEY (`timestamp`),
   KEY (`status`)
 );
 
