@@ -101,6 +101,7 @@ func (r *TxRelayer) scanBlockLoop() {
 			continue
 		}
 		if btcTip <= r.syncPoint+r.confirmationDepth {
+			r.logger.Infof("No new block, current tip: %d, syncPoint:%d", btcTip, r.syncPoint)
 			time.Sleep(btcInterval)
 			continue
 		}
