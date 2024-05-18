@@ -98,7 +98,7 @@ func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
 func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
 	var txs []*BtcDepositTx
 	err := db.db.Model(&BtcDepositTx{}).Where("status = ?", StatusPending).
-		Order("timestamp ASC").Limit(50).Find(&txs).Error
+		Order("block_time ASC").Limit(50).Find(&txs).Error
 	if err != nil {
 		return nil, err
 	}
