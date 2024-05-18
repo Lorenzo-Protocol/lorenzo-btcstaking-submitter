@@ -34,7 +34,7 @@ package db
 //
 //	depositTx := &BtcDepositTx{
 //		Txid:      "0x12ab",
-//		Timestamp: time.Now(),
+//		BlockTime: time.Now(),
 //	}
 //	if err := mysqlDB.InsertBtcDepositTxs([]*BtcDepositTx{depositTx}); err != nil {
 //		t.Fatal(err)

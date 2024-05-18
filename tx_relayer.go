@@ -177,7 +177,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 
-			msg, err := r.newMsgCreateBTCStaking(tx.Receiver, tx.ReceiverAddress, r.submitter, proofRaw, txBytes)
+			msg, err := r.newMsgCreateBTCStaking(tx.ReceiverName, tx.ReceiverAddress, r.submitter, proofRaw, txBytes)
 			if err != nil {
 				r.logger.Errorf("Failed to create msgCreateBTCStaking: %v", err)
 				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusInvalid); err != nil {
@@ -241,14 +241,14 @@ MainLoop:
 			}
 
 			depositTx := &db.BtcDepositTx{
-				Receiver:        r.GetReceiverNameByAddress(receiverAddr.String()),
+				ReceiverName:    r.GetReceiverNameByAddress(receiverAddr.String()),
 				ReceiverAddress: receiverAddr.String(),
 				Amount:          value,
 				Txid:            txid,
 				Height:          blockHeight,
 				BlockHash:       msgBlock.BlockHash().String(),
 				Status:          db.StatusPending,
-				Timestamp:       msgBlock.Header.Timestamp,
+				BlockTime:       msgBlock.Header.Timestamp,
 			}
 			depositTxs = append(depositTxs, depositTx)
 			continue MainLoop
@@ -278,7 +278,7 @@ func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
 	return false
 }
 
-func (r *TxRelayer) newMsgCreateBTCStaking(receiver string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
+func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
 	receiverAddress, err := btcutil.DecodeAddress(receiverAddressHex, r.btcParam)
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (r *TxRelayer) newMsgCreateBTCStaking(receiver string, receiverAddressHex s
 
 	msg := &types.MsgCreateBTCStaking{
 		Signer:   submitterAddressHex,
-		Receiver: receiver, // receiver name
+		Receiver: receiverName,
 		StakingTx: &types.TransactionInfo{
 			Key: &types.TransactionKey{
 				Index: txIndex,
