@@ -40,6 +40,7 @@ type TxRelayer struct {
 }
 
 func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+	// get btc staking params to get btc deposit receivers
 	btcStakingParams, err := lorenzoClient.QueryBTCStakingParams()
 	if err != nil {
 		return nil, err
@@ -51,11 +52,6 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	}
 	btcParam := btc.GetBTCParams(conf.NetParams)
 
-	receivers := make([]*types.Receiver, 0, len(btcStakingParams.Params.Receivers))
-	for _, receiver := range btcStakingParams.Params.Receivers {
-		receivers = append(receivers, receiver)
-	}
-
 	txRelayer := &TxRelayer{
 		logger:            logger,
 		confirmationDepth: conf.ConfirmationDepth,
@@ -63,13 +59,12 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		lorenzoClient:     lorenzoClient,
 		db:                database,
 		btcParam:          btcParam,
-
-		receivers: receivers,
-		syncPoint: syncPoint,
-		submitter: lorenzoClient.MustGetAddr(),
+		syncPoint:         syncPoint,
+		submitter:         lorenzoClient.MustGetAddr(),
 
 		wg: sync.WaitGroup{},
 	}
+	txRelayer.updateBtcReceiverList(btcStakingParams.Params.Receivers)
 
 	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d", conf.NetParams, conf.ConfirmationDepth)
 	return txRelayer, nil
@@ -88,6 +83,16 @@ func (r *TxRelayer) Start() error {
 
 	r.wg.Wait()
 	return nil
+}
+
+// TODO: update btc receiver list when Lorenzo btc staking receiver list update
+func (r *TxRelayer) updateBtcReceiverList(receivers []*types.Receiver) {
+	r.receivers = receivers
+	r.logger.Infof("*************** new btc deposit receiver list ***************")
+	for _, receiver := range receivers {
+		r.logger.Infof("btc deposit receiver name: %s, address: %s", receiver.Name, receiver.Addr)
+	}
+	r.logger.Infof("*************** new btc deposit receiver list ***************")
 }
 
 func (r *TxRelayer) scanBlockLoop() {
@@ -189,7 +194,7 @@ func (r *TxRelayer) submitLoop() {
 
 			_, err = r.lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
 			if err != nil {
-				r.logger.Errorf("Failed to create btc staking with btc proof, error: %v", err)
+				r.logger.Errorf("Failed to create btc staking with btc proof, txid:%s, error: %v", tx.Txid, err)
 				time.Sleep(connectErrWaitInterval)
 				continue
 			}
