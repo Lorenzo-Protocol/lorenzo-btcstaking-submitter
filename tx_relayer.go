@@ -21,8 +21,9 @@ import (
 )
 
 type TxRelayer struct {
-	logger            *zap.SugaredLogger
-	confirmationDepth uint64
+	logger                       *zap.SugaredLogger
+	confirmationDepth            uint64
+	lorenzoBtcConfirmationsDepth uint64 // lorenzo btc staking tx confirmation depth
 
 	btcParam  *chaincfg.Params
 	submitter string
@@ -53,14 +54,15 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	btcParam := btc.GetBTCParams(conf.NetParams)
 
 	txRelayer := &TxRelayer{
-		logger:            logger,
-		confirmationDepth: conf.ConfirmationDepth,
-		btcQuery:          btcQuery,
-		lorenzoClient:     lorenzoClient,
-		db:                database,
-		btcParam:          btcParam,
-		syncPoint:         syncPoint,
-		submitter:         lorenzoClient.MustGetAddr(),
+		logger:                       logger,
+		confirmationDepth:            conf.ConfirmationDepth,
+		lorenzoBtcConfirmationsDepth: uint64(btcStakingParams.Params.BtcConfirmationsDepth),
+		btcQuery:                     btcQuery,
+		lorenzoClient:                lorenzoClient,
+		db:                           database,
+		btcParam:                     btcParam,
+		syncPoint:                    syncPoint,
+		submitter:                    lorenzoClient.MustGetAddr(),
 
 		wg: sync.WaitGroup{},
 	}
@@ -88,11 +90,11 @@ func (r *TxRelayer) Start() error {
 // TODO: update btc receiver list when Lorenzo btc staking receiver list update
 func (r *TxRelayer) updateBtcReceiverList(receivers []*types.Receiver) {
 	r.receivers = receivers
-	r.logger.Infof("*************** new btc deposit receiver list ***************")
+	r.logger.Infof("*************** btc deposit receiver list ***************")
 	for _, receiver := range receivers {
 		r.logger.Infof("btc deposit receiver name: %s, address: %s", receiver.Name, receiver.Addr)
 	}
-	r.logger.Infof("*************** new btc deposit receiver list ***************")
+	r.logger.Infof("*************** btc deposit receiver list ***************")
 }
 
 func (r *TxRelayer) scanBlockLoop() {
@@ -148,6 +150,22 @@ func (r *TxRelayer) submitLoop() {
 
 		if len(txs) == 0 {
 			r.logger.Infof("No unhandled btc deposit txs")
+			time.Sleep(btcInterval)
+			continue
+		}
+
+		lorenzoBTCTipResponse, err := r.lorenzoClient.BTCHeaderChainTip()
+		if err != nil {
+			r.logger.Errorf("Failed to get lorenzo btc tip, error: %v", err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
+
+		// avoid submitting txs that are not confirmed on Lorenzo
+		stakingTxDepth := lorenzoBTCTipResponse.Header.Height - txs[0].Height
+		if stakingTxDepth < r.lorenzoBtcConfirmationsDepth {
+			r.logger.Infof("Waiting for btc confirmations on Lorenzo, depth: %d, tip: %d",
+				stakingTxDepth, lorenzoBTCTipResponse.Header.Height)
 			time.Sleep(btcInterval)
 			continue
 		}

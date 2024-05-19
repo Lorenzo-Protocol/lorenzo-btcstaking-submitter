@@ -20,6 +20,10 @@ const (
 	StatusInvalid = 2
 )
 
+const (
+	BatchHandleBtcDepositTxsNum = 50
+)
+
 type MysqlDB struct {
 	db *gorm.DB
 
@@ -97,8 +101,9 @@ func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
 
 func (db *MysqlDB) GetUnhandledBtcDepositTxs() ([]*BtcDepositTx, error) {
 	var txs []*BtcDepositTx
+	// BTC block timestamp is not strictly increasing.
 	err := db.db.Model(&BtcDepositTx{}).Where("status = ?", StatusPending).
-		Order("block_time ASC").Limit(50).Find(&txs).Error
+		Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
 	if err != nil {
 		return nil, err
 	}
