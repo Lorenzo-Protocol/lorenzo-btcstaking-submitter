@@ -160,12 +160,10 @@ func (r *TxRelayer) submitLoop() {
 			time.Sleep(connectErrWaitInterval)
 			continue
 		}
-
 		// avoid submitting txs that are not confirmed on Lorenzo
-		stakingTxDepth := lorenzoBTCTipResponse.Header.Height - txs[0].Height
-		if stakingTxDepth < r.lorenzoBtcConfirmationsDepth {
-			r.logger.Infof("Waiting for btc confirmations on Lorenzo, depth: %d, tip: %d",
-				stakingTxDepth, lorenzoBTCTipResponse.Header.Height)
+		if lorenzoBTCTipResponse.Header.Height < r.lorenzoBtcConfirmationsDepth+txs[0].Height {
+			r.logger.Infof("Waiting for btc confirmations on Lorenzo, tip: %d",
+				lorenzoBTCTipResponse.Header.Height)
 			time.Sleep(btcInterval)
 			continue
 		}
