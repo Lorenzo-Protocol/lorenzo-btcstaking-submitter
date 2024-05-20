@@ -215,8 +215,6 @@ github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1 h1:MnYOjaXsn1XkcsLyiT
 github.com/Lorenzo-Protocol/ethermint v0.22.0-rpc-client-1/go.mod h1:JEhGmVj5rZX5bTfOqh3nltE2N6+qMI4HVNV2vW6PpOQ=
 github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240517025956-0a52d3e36f78 h1:d+5P0rqlIavzkDoVEJwiZAshqRwCGDDNLSAsjfRGaL0=
 github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240517025956-0a52d3e36f78/go.mod h1:hoPkZ826BbJn7B3cAi22c+0mMGSosq6Z9RCAv7D1oKs=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240517030816-df69bba6e890 h1:8gKEhrj+1Pr/VGrujyF+opNf39lJijwl5AsRRIu8pZ0=
-github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240517030816-df69bba6e890/go.mod h1:qbLlaHASTwfRzUO1D70zgCVBbV9Qt52988LgUJp51sM=
 github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240519033825-b8fcc47177a4 h1:wvVHXFuMPlAf8wK4tKb+dVNffSRWkhGXShapgNDN9Ss=
 github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240519033825-b8fcc47177a4/go.mod h1:qbLlaHASTwfRzUO1D70zgCVBbV9Qt52988LgUJp51sM=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
@@ -706,8 +704,8 @@ github.com/hashicorp/go-cleanhttp v0.5.0/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtng
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9neXJWAZQ=
 github.com/hashicorp/go-cleanhttp v0.5.2/go.mod h1:kO/YDlP8L1346E6Sodw+PrpBSV4/SoxCXGY6BqNFT48=
-github.com/hashicorp/go-getter v1.7.2 h1:uJDtyXwEfalmp1PqdxuhZqrNkUyClZAhVeZYTArbqkg=
-github.com/hashicorp/go-getter v1.7.2/go.mod h1:W7TalhMmbPmsSMdNjD0ZskARur/9GJ17cfHTRtXV744=
+github.com/hashicorp/go-getter v1.7.4 h1:3yQjWuxICvSpYwqSayAdKRFcvBl1y/vogCxczWSmix0=
+github.com/hashicorp/go-getter v1.7.4/go.mod h1:W7TalhMmbPmsSMdNjD0ZskARur/9GJ17cfHTRtXV744=
 github.com/hashicorp/go-immutable-radix v1.0.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-immutable-radix v1.3.1 h1:DKHmCUm2hRBK510BaiZlwvpD40f8bJFeZnpfm2KLowc=
 github.com/hashicorp/go-immutable-radix v1.3.1/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
