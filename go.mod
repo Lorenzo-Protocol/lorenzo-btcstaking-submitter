@@ -4,15 +4,15 @@ go 1.21
 
 require (
 	cosmossdk.io/errors v1.0.1 // indirect
-	cosmossdk.io/log v1.3.0 // indirect
-	cosmossdk.io/math v1.2.0 // indirect
+	cosmossdk.io/log v1.3.1 // indirect
+	cosmossdk.io/math v1.3.0 // indirect
 	github.com/avast/retry-go/v4 v4.5.1 // indirect
 	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
-	github.com/cometbft/cometbft v0.37.4 // indirect
-	github.com/cosmos/cosmos-sdk v0.47.8 //indirect
+	github.com/cometbft/cometbft v0.37.5 // indirect
+	github.com/cosmos/cosmos-sdk v0.47.10 //indirect
 	github.com/cosmos/relayer/v2 v2.4.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/gogo/protobuf v1.3.3 // indirect
@@ -33,7 +33,7 @@ require (
 
 require (
 	github.com/Lorenzo-Protocol/lorenzo v0.0.0-20240517025956-0a52d3e36f78
-	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240519033825-b8fcc47177a4
+	github.com/Lorenzo-Protocol/lorenzo-sdk v0.0.0-20240521031040-fe36177bc857
 )
 
 require (
@@ -185,7 +185,7 @@ require (
 	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect
-	github.com/rs/zerolog v1.31.0 // indirect
+	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
