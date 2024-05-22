@@ -71,8 +71,11 @@ func (db *MysqlDB) GetSyncPoint() (uint64, error) {
 }
 
 func (db *MysqlDB) InsertBtcDepositTxs(txs []*BtcDepositTx) (err error) {
-	dbtx := db.db.Begin()
+	if len(txs) == 0 {
+		return nil
+	}
 
+	dbtx := db.db.Begin()
 	defer func() {
 		if err != nil {
 			dbtx.Rollback()
