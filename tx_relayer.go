@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	lrztypes "github.com/Lorenzo-Protocol/lorenzo/types"
 	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/keeper"
 	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/types"
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -18,6 +18,13 @@ import (
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
+)
+
+var (
+	LorenzoBtcStakingNotConfirmedErrorMessage = "not k-deep"
+	LorenzoBtcStakingDuplicateTxErrorMessage  = "duplicate btc transaction"
+	LorenzoTimeoutErrorMessage                = "context deadline exceeded"
+	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
 )
 
 type TxRelayer struct {
@@ -92,7 +99,8 @@ func (r *TxRelayer) updateBtcReceiverList(receivers []*types.Receiver) {
 	r.receivers = receivers
 	r.logger.Infof("*************** btc deposit receiver list ***************")
 	for _, receiver := range receivers {
-		r.logger.Infof("btc deposit receiver name: %s, address: %s", receiver.Name, receiver.Addr)
+		r.logger.Infof("btc deposit receiver name: %s, address: %s, ethAddress: %s",
+			receiver.Name, receiver.Addr, receiver.EthAddr)
 	}
 	r.logger.Infof("*************** btc deposit receiver list ***************")
 }
@@ -181,7 +189,7 @@ func (r *TxRelayer) submitLoop() {
 				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
 					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 				}
-				i++
+				i++ // skip transaction have been handled
 				continue
 			}
 
@@ -201,9 +209,7 @@ func (r *TxRelayer) submitLoop() {
 			msg, err := r.newMsgCreateBTCStaking(tx.ReceiverName, tx.ReceiverAddress, r.submitter, proofRaw, txBytes)
 			if err != nil {
 				r.logger.Errorf("Failed to create msgCreateBTCStaking: %v", err)
-				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusInvalid); err != nil {
-					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
-				}
+				r.updateDepositTxStatus(tx.Txid, db.StatusInvalid)
 				i++ // skip this tx
 				continue
 			}
@@ -211,7 +217,10 @@ func (r *TxRelayer) submitLoop() {
 			_, err = r.lorenzoClient.CreateBTCStakingWithBTCProof(context.Background(), msg)
 			if err != nil {
 				r.logger.Errorf("Failed to create btc staking with btc proof, txid:%s, error: %v", tx.Txid, err)
-				time.Sleep(connectErrWaitInterval)
+				if !isStakingMintTryAgainError(err) {
+					r.updateDepositTxStatus(tx.Txid, db.StatusInvalid)
+					i++ // skip this tx
+				}
 				continue
 			}
 
@@ -255,21 +264,21 @@ MainLoop:
 			}
 
 			//pick only one valid receiver check
-			value, _, err := btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
-			if err != nil {
-				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
-				continue MainLoop
-			}
+			//value, _, err := btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
+			//if err != nil {
+			//	r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
+			//	continue MainLoop
+			//}
 
 			depositTx := &db.BtcDepositTx{
 				ReceiverName:    r.GetReceiverNameByAddress(receiverAddr.String()),
 				ReceiverAddress: receiverAddr.String(),
-				Amount:          value,
-				Txid:            txid,
-				Height:          blockHeight,
-				BlockHash:       msgBlock.BlockHash().String(),
-				Status:          db.StatusPending,
-				BlockTime:       msgBlock.Header.Timestamp,
+				//Amount:          value,
+				Txid:      txid,
+				Height:    blockHeight,
+				BlockHash: msgBlock.BlockHash().String(),
+				Status:    db.StatusPending,
+				BlockTime: msgBlock.Header.Timestamp,
 			}
 			depositTxs = append(depositTxs, depositTx)
 			continue MainLoop
@@ -299,20 +308,26 @@ func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
 	return false
 }
 
-func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
-	receiverAddress, err := btcutil.DecodeAddress(receiverAddressHex, r.btcParam)
-	if err != nil {
-		return nil, err
+func (r *TxRelayer) updateDepositTxStatus(txid string, status int) {
+	if err := r.db.UpdateTxStatus(txid, status); err != nil {
+		r.logger.Errorf("Failed to update tx status to [%d], txid: %s, error: %v", status, txid, err)
 	}
+}
 
-	stakingMsgTx, err := btc.NewBTCTxFromBytes(txBytes)
-	if err != nil {
-		return nil, err
-	}
-	_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, receiverAddress)
-	if err != nil {
-		return nil, err
-	}
+func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
+	//receiverAddress, err := btcutil.DecodeAddress(receiverAddressHex, r.btcParam)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//stakingMsgTx, err := btc.NewBTCTxFromBytes(txBytes)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, receiverAddress)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	merkleBlock, err := keeper.ParseMerkleBlock(proofRaw)
 	if err != nil {
@@ -341,4 +356,11 @@ func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressH
 	}
 
 	return msg, nil
+}
+
+func isStakingMintTryAgainError(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), LorenzoTimeoutErrorMessage) ||
+		strings.Contains(err.Error(), LorenzoBtcStakingNotConfirmedErrorMessage) ||
+		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage) ||
+		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage))
 }
