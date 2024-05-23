@@ -24,6 +24,7 @@ var (
 	LorenzoBtcStakingNotConfirmedErrorMessage = "not k-deep"
 	LorenzoBtcStakingDuplicateTxErrorMessage  = "duplicate btc transaction"
 	LorenzoTimeoutErrorMessage                = "context deadline exceeded"
+	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
 )
 
 type TxRelayer struct {
@@ -188,7 +189,7 @@ func (r *TxRelayer) submitLoop() {
 				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
 					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 				}
-				i++
+				i++ // skip transaction have been handled
 				continue
 			}
 
@@ -360,5 +361,6 @@ func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressH
 func isStakingMintTryAgainError(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), LorenzoTimeoutErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcStakingNotConfirmedErrorMessage) ||
-		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage))
+		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage) ||
+		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage))
 }
