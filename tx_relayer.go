@@ -25,6 +25,7 @@ var (
 	LorenzoBtcStakingDuplicateTxErrorMessage  = "duplicate btc transaction"
 	LorenzoTimeoutErrorMessage                = "context deadline exceeded"
 	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
+	PostFailedMessage                         = "post failed"
 )
 
 type TxRelayer struct {
@@ -363,5 +364,6 @@ func isStakingMintTryAgainError(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), LorenzoTimeoutErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcStakingNotConfirmedErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage) ||
-		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage))
+		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage) ||
+		strings.Contains(err.Error(), PostFailedMessage))
 }
