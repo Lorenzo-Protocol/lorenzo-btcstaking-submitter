@@ -75,7 +75,8 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	}
 	txRelayer.updateBtcReceiverList(btcStakingParams.Params.Receivers)
 
-	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d", conf.NetParams, conf.ConfirmationDepth)
+	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d, submitter: %s",
+		conf.NetParams, conf.ConfirmationDepth, txRelayer.submitter)
 	return txRelayer, nil
 }
 
