@@ -272,6 +272,26 @@ MainLoop:
 				continue MainLoop
 			}
 
+			//check inputs address if no opReturn
+			if receiver.EthAddr != "" {
+				for {
+					txDetail, err := r.btcQuery.GetTx(txid)
+					if err != nil {
+						r.logger.Errorf("Failed to get tx detail, txid: %s, error: %v", txid, err)
+						time.Sleep(time.Second)
+						continue
+					}
+
+					for _, vin := range txDetail.Vin {
+						if r.IsValidDepositReceiver(vin.Prevout.ScriptPubKeyAddress) {
+							//skip transaction if sender is one of receivers
+							continue MainLoop
+						}
+					}
+					break
+				}
+			}
+
 			depositTx := &db.BtcDepositTx{
 				ReceiverName:    receiver.Name,
 				ReceiverAddress: receiver.Addr,

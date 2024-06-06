@@ -147,6 +147,25 @@ func (c *BTCQuery) GetBlockByHeight(height uint64) (*wire.MsgBlock, error) {
 	return &msgBlock, nil
 }
 
+func (c *BTCQuery) GetTx(txid string) (*BtcTx, error) {
+	url := fmt.Sprintf("%s/tx/%s", c.apiEndpoint, txid)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkBlockstreamResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var btcTx BtcTx
+	if err := json.NewDecoder(resp.Body).Decode(&btcTx); err != nil {
+		return nil, err
+	}
+
+	return &btcTx, nil
+}
+
 func checkBlockstreamResponse(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
 		var errorBuf bytes.Buffer
