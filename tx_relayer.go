@@ -166,7 +166,7 @@ func (r *TxRelayer) submitLoop() {
 		}
 
 		if len(txs) == 0 {
-			r.logger.Infof("No unhandled btc deposit txs")
+			r.logger.Infof("No unhandled btc deposit txs, lorenzoBTCTip: %d", lorenzoBTCTipResponse.Header.Height)
 			time.Sleep(btcInterval)
 			continue
 		}
