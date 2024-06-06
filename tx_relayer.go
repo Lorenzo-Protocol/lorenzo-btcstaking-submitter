@@ -151,7 +151,14 @@ func (r *TxRelayer) submitLoop() {
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
-		txs, err := r.db.GetUnhandledBtcDepositTxs()
+		lorenzoBTCTipResponse, err := r.lorenzoClient.BTCHeaderChainTip()
+		if err != nil {
+			r.logger.Errorf("Failed to get lorenzo btc tip, error: %v", err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
+
+		txs, err := r.db.GetUnhandledBtcDepositTxs(lorenzoBTCTipResponse.Header.Height)
 		if err != nil {
 			r.logger.Errorf("Failed to get unhandled btc deposit txs, error: %v", err)
 			time.Sleep(connectErrWaitInterval)
@@ -160,20 +167,6 @@ func (r *TxRelayer) submitLoop() {
 
 		if len(txs) == 0 {
 			r.logger.Infof("No unhandled btc deposit txs")
-			time.Sleep(btcInterval)
-			continue
-		}
-
-		lorenzoBTCTipResponse, err := r.lorenzoClient.BTCHeaderChainTip()
-		if err != nil {
-			r.logger.Errorf("Failed to get lorenzo btc tip, error: %v", err)
-			time.Sleep(connectErrWaitInterval)
-			continue
-		}
-		// avoid submitting txs that are not confirmed on Lorenzo
-		if lorenzoBTCTipResponse.Header.Height < r.lorenzoBtcConfirmationsDepth+txs[0].Height {
-			r.logger.Infof("Waiting for btc confirmations on Lorenzo, tip: %d",
-				lorenzoBTCTipResponse.Header.Height)
 			time.Sleep(btcInterval)
 			continue
 		}
@@ -261,26 +254,33 @@ MainLoop:
 			if err != nil {
 				continue
 			}
-			if !r.IsValidDepositReceiver(receiverAddr.String()) {
+
+			receiver := r.GetReceiverByAddress(receiverAddr.String())
+			if receiver == nil {
 				continue
 			}
 
+			var value uint64
 			//pick only one valid receiver check
-			//value, _, err := btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
-			//if err != nil {
-			//	r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
-			//	continue MainLoop
-			//}
+			if receiver.EthAddr == "" {
+				value, _, err = keeper.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
+			} else {
+				value, err = keeper.ExtractPaymentTo(tx, receiverAddr)
+			}
+			if err != nil {
+				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
+				continue MainLoop
+			}
 
 			depositTx := &db.BtcDepositTx{
-				ReceiverName:    r.GetReceiverNameByAddress(receiverAddr.String()),
-				ReceiverAddress: receiverAddr.String(),
-				//Amount:          value,
-				Txid:      txid,
-				Height:    blockHeight,
-				BlockHash: msgBlock.BlockHash().String(),
-				Status:    db.StatusPending,
-				BlockTime: msgBlock.Header.Timestamp,
+				ReceiverName:    receiver.Name,
+				ReceiverAddress: receiver.Addr,
+				Amount:          value,
+				Txid:            txid,
+				Height:          blockHeight,
+				BlockHash:       msgBlock.BlockHash().String(),
+				Status:          db.StatusPending,
+				BlockTime:       msgBlock.Header.Timestamp,
 			}
 			depositTxs = append(depositTxs, depositTx)
 			continue MainLoop
@@ -308,6 +308,20 @@ func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
 	}
 
 	return false
+}
+
+func (r *TxRelayer) GetReceiverByAddress(addr string) *types.Receiver {
+	for _, receiver := range r.receivers {
+		if receiver.Addr == addr {
+			return &types.Receiver{
+				Name:    receiver.Name,
+				Addr:    receiver.Addr,
+				EthAddr: receiver.EthAddr,
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r *TxRelayer) updateDepositTxStatus(txid string, status int) {
