@@ -106,45 +106,11 @@ func (db *MysqlDB) GetUnhandledBtcDepositTxs(lorenzoBTCTip uint64) ([]*BtcDeposi
 	var txs []*BtcDepositTx
 	// BTC block timestamp is not strictly increasing.
 	err := db.db.Model(&BtcDepositTx{}).
-		Where("status = ?", StatusPending).
-		Where("amount < ?", Dep0Amount).
-		Where("height <= ?", lorenzoBTCTip).
+		Where("status=? AND (amount<? OR (amount<? AND height<=?) OR (amount<? AND height<=?) OR (amount<? AND height<=?))",
+			StatusPending, Dep0Amount, Dep1Amount, lorenzoBTCTip-1, Dep2Amount, lorenzoBTCTip-2, Dep3Amount, lorenzoBTCTip-3).
 		Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
 	if err != nil {
 		return nil, err
-	}
-
-	if len(txs) == 0 {
-		err := db.db.Model(&BtcDepositTx{}).
-			Where("status = ?", StatusPending).
-			Where("amount < ?", Dep1Amount).
-			Where("height <= ?", lorenzoBTCTip-1).
-			Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(txs) == 0 {
-		err := db.db.Model(&BtcDepositTx{}).
-			Where("status = ?", StatusPending).
-			Where("amount < ?", Dep2Amount).
-			Where("height <= ?", lorenzoBTCTip-2).
-			Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(txs) == 0 {
-		err := db.db.Model(&BtcDepositTx{}).
-			Where("status = ?", StatusPending).
-			Where("amount < ?", Dep3Amount).
-			Where("height <= ?", lorenzoBTCTip-3).
-			Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return txs, nil
