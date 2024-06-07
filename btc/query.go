@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/wire"
 	"net/http"
+
+	"github.com/btcsuite/btcd/wire"
 )
 
 type BTCQuery struct {
@@ -24,6 +26,10 @@ func (c *BTCQuery) GetTxBytes(txid string) ([]byte, error) {
 	url := c.apiEndpoint + "/tx/" + txid + "/raw"
 	resp, err := http.Get(url)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := checkBlockstreamResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -46,6 +52,10 @@ func (c *BTCQuery) GetTxs(address string, lastSeenTxid string) ([]BtcTx, error) 
 		return nil, err
 	}
 
+	if err := checkBlockstreamResponse(resp); err != nil {
+		return nil, err
+	}
+
 	if err := json.NewDecoder(resp.Body).Decode(&txs); err != nil {
 		return nil, err
 	}
@@ -57,6 +67,10 @@ func (c *BTCQuery) GetTxBlockProof(txid string) ([]byte, error) {
 	url := c.apiEndpoint + "/tx/" + txid + "/merkleblock-proof"
 	resp, err := http.Get(url)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := checkBlockstreamResponse(resp); err != nil {
 		return nil, err
 	}
 
@@ -77,6 +91,10 @@ func (c *BTCQuery) GetBTCCurrentHeight() (uint64, error) {
 		return 0, err
 	}
 
+	if err := checkBlockstreamResponse(resp); err != nil {
+		return 0, err
+	}
+
 	var height uint64
 	if err := json.NewDecoder(resp.Body).Decode(&height); err != nil {
 		return 0, err
@@ -89,6 +107,10 @@ func (c *BTCQuery) GetBlockHashByHeight(height uint64) (string, error) {
 	url := fmt.Sprintf("%s/block-height/%d", c.apiEndpoint, height)
 	resp, err := http.Get(url)
 	if err != nil {
+		return "", err
+	}
+
+	if err := checkBlockstreamResponse(resp); err != nil {
 		return "", err
 	}
 
@@ -113,16 +135,44 @@ func (c *BTCQuery) GetBlockByHeight(height uint64) (*wire.MsgBlock, error) {
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
+	if err := checkBlockstreamResponse(resp); err != nil {
 		return nil, err
 	}
 
 	var msgBlock wire.MsgBlock
-	if err := msgBlock.Deserialize(&buf); err != nil {
+	if err := msgBlock.Deserialize(resp.Body); err != nil {
 		return nil, err
 	}
 
 	return &msgBlock, nil
+}
+
+func (c *BTCQuery) GetTx(txid string) (*BtcTx, error) {
+	url := fmt.Sprintf("%s/tx/%s", c.apiEndpoint, txid)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkBlockstreamResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var btcTx BtcTx
+	if err := json.NewDecoder(resp.Body).Decode(&btcTx); err != nil {
+		return nil, err
+	}
+
+	return &btcTx, nil
+}
+
+func checkBlockstreamResponse(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK {
+		var errorBuf bytes.Buffer
+		_, _ = errorBuf.ReadFrom(resp.Body)
+
+		return errors.New(errorBuf.String())
+	}
+
+	return nil
 }

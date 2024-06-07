@@ -2,6 +2,13 @@ package db
 
 import "time"
 
+const (
+	Dep0Amount = 4e5
+	Dep1Amount = 2e6
+	Dep2Amount = 1e7
+	Dep3Amount = 5e7
+)
+
 type BaseTable struct {
 	Id          int
 	UpdatedTime time.Time `gorm:"autoUpdateTime"`
