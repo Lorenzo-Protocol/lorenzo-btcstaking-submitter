@@ -265,22 +265,53 @@ MainLoop:
 				continue
 			}
 
+			receiver := r.GetReceiverByAddress(receiverAddr.String())
+			if receiver == nil {
+				// Ignore output whose address is not lorenzo btc deposit receiver.
+				continue
+			}
+
+			var value uint64
 			//pick only one valid receiver check
-			//value, _, err := btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
-			//if err != nil {
-			//	r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
-			//	continue MainLoop
-			//}
+			if receiver.EthAddr == "" {
+				value, _, err = keeper.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
+			} else {
+				value, err = keeper.ExtractPaymentTo(tx, receiverAddr)
+			}
+			if err != nil {
+				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
+				continue MainLoop
+			}
+
+			//check inputs address if no opReturn
+			if receiver.EthAddr != "" {
+				for {
+					txDetail, err := r.btcQuery.GetTx(txid)
+					if err != nil {
+						r.logger.Errorf("Failed to get tx detail, txid: %s, error: %v", txid, err)
+						time.Sleep(time.Second)
+						continue
+					}
+
+					for _, vin := range txDetail.Vin {
+						if r.IsValidDepositReceiver(vin.Prevout.ScriptPubKeyAddress) {
+							//skip transaction if sender is one of receivers
+							continue MainLoop
+						}
+					}
+					break
+				}
+			}
 
 			depositTx := &db.BtcDepositTx{
-				ReceiverName:    r.GetReceiverNameByAddress(receiverAddr.String()),
-				ReceiverAddress: receiverAddr.String(),
-				//Amount:          value,
-				Txid:      txid,
-				Height:    blockHeight,
-				BlockHash: msgBlock.BlockHash().String(),
-				Status:    db.StatusPending,
-				BlockTime: msgBlock.Header.Timestamp,
+				ReceiverName:    receiver.Name,
+				ReceiverAddress: receiver.Addr,
+				Amount:          value,
+				Txid:            txid,
+				Height:          blockHeight,
+				BlockHash:       msgBlock.BlockHash().String(),
+				Status:          db.StatusPending,
+				BlockTime:       msgBlock.Header.Timestamp,
 			}
 			depositTxs = append(depositTxs, depositTx)
 			continue MainLoop
@@ -298,6 +329,20 @@ func (r *TxRelayer) GetReceiverNameByAddress(addr string) string {
 	}
 
 	return ""
+}
+
+func (r *TxRelayer) GetReceiverByAddress(addr string) *types.Receiver {
+	for _, receiver := range r.receivers {
+		if receiver.Addr == addr {
+			return &types.Receiver{
+				Name:    receiver.Name,
+				Addr:    receiver.Addr,
+				EthAddr: receiver.EthAddr,
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
