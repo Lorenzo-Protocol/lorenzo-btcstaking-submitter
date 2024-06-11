@@ -30,7 +30,7 @@ var (
 
 type TxRelayer struct {
 	logger                       *zap.SugaredLogger
-	confirmationDepth            uint64
+	delayBlocks                  uint64
 	lorenzoBtcConfirmationsDepth uint64 // lorenzo btc staking tx confirmation depth
 
 	btcParam  *chaincfg.Params
@@ -63,7 +63,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 
 	txRelayer := &TxRelayer{
 		logger:                       logger,
-		confirmationDepth:            conf.ConfirmationDepth,
+		delayBlocks:                  conf.ConfirmationDepth,
 		lorenzoBtcConfirmationsDepth: uint64(btcStakingParams.Params.BtcConfirmationsDepth),
 		btcQuery:                     btcQuery,
 		lorenzoClient:                lorenzoClient,
@@ -117,33 +117,34 @@ func (r *TxRelayer) scanBlockLoop() {
 			time.Sleep(connectErrWaitInterval)
 			continue
 		}
-		if btcTip <= r.syncPoint+r.confirmationDepth {
+
+		nextBlockHeightToFetch := r.syncPoint + 1
+		if btcTip < nextBlockHeightToFetch+r.delayBlocks {
 			r.logger.Infof("No new block, current tip: %d, syncPoint:%d", btcTip, r.syncPoint)
 			time.Sleep(btcInterval)
 			continue
 		}
 
-		wantToGetBlockHeight := r.syncPoint + 1
-		msgBlock, err := r.btcQuery.GetBlockByHeight(wantToGetBlockHeight)
+		msgBlock, err := r.btcQuery.GetBlockByHeight(nextBlockHeightToFetch)
 		if err != nil {
-			r.logger.Errorf("Failed to get btc block: %d, err: %v", wantToGetBlockHeight, err)
+			r.logger.Errorf("Failed to get btc block: %d, err: %v", nextBlockHeightToFetch, err)
 			time.Sleep(connectErrWaitInterval)
 			continue
 		}
 
-		depositTxs := r.getValidDepositTxs(wantToGetBlockHeight, msgBlock)
+		depositTxs := r.getValidDepositTxs(nextBlockHeightToFetch, msgBlock)
 		if err := r.db.InsertBtcDepositTxs(depositTxs); err != nil {
-			r.logger.Errorf("Failed to insert btc deposit txs,blockHeight:%d, error: %v", wantToGetBlockHeight, err)
+			r.logger.Errorf("Failed to insert btc deposit txs,blockHeight:%d, error: %v", nextBlockHeightToFetch, err)
 			continue
 		}
 
-		if err := r.updateSyncPoint(wantToGetBlockHeight); err != nil {
-			r.logger.Errorf("Failed to update sync point, point:%d, error: %v", wantToGetBlockHeight, err)
+		if err := r.updateSyncPoint(nextBlockHeightToFetch); err != nil {
+			r.logger.Errorf("Failed to update sync point, point:%d, error: %v", nextBlockHeightToFetch, err)
 			time.Sleep(connectErrWaitInterval)
 			continue
 		}
 
-		r.logger.Infof("Handled block: %d", wantToGetBlockHeight)
+		r.logger.Infof("Handled block: %d", nextBlockHeightToFetch)
 	}
 }
 
