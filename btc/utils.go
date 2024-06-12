@@ -3,14 +3,30 @@ package btc
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 )
 
+const maxOpReturnPkScriptSize = 83
+
+func ExtractPaymentTo(tx *wire.MsgTx, addr btcutil.Address) (uint64, error) {
+	payToAddrScript, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid address")
+	}
+	var amt uint64 = 0
+	for _, out := range tx.TxOut {
+		if bytes.Equal(out.PkScript, payToAddrScript) {
+			amt += uint64(out.Value)
+		}
+	}
+	return amt, nil
+}
+
 func ExtractPaymentToWithOpReturnId(tx *wire.MsgTx, addr btcutil.Address) (uint64, []byte, error) {
-	const maxOpReturnPkScriptSize = 83
 	payToAddrScript, err := txscript.PayToAddrScript(addr)
 	if err != nil {
 		return 0, nil, fmt.Errorf("invalid address")
