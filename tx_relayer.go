@@ -264,9 +264,9 @@ MainLoop:
 			var value uint64
 			//pick only one valid receiver check
 			if receiver.EthAddr == "" {
-				value, _, err = keeper.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
+				value, _, err = btc.ExtractPaymentToWithOpReturnId(tx, receiverAddr)
 			} else {
-				value, err = keeper.ExtractPaymentTo(tx, receiverAddr)
+				value, err = btc.ExtractPaymentTo(tx, receiverAddr)
 			}
 			if err != nil {
 				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
