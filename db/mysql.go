@@ -106,8 +106,8 @@ func (db *MysqlDB) GetUnhandledBtcDepositTxs(lorenzoBTCTip uint64) ([]*BtcDeposi
 	var txs []*BtcDepositTx
 	// BTC block timestamp is not strictly increasing.
 	err := db.db.Model(&BtcDepositTx{}).
-		Where("status=? AND (amount<? OR (amount<? AND height<=?) OR (amount<? AND height<=?) OR (amount<? AND height<=?))",
-			StatusPending, Dep0Amount, Dep1Amount, lorenzoBTCTip-1, Dep2Amount, lorenzoBTCTip-2, Dep3Amount, lorenzoBTCTip-3).
+		Where("status=? AND (amount<? OR (amount<? AND height<=?) OR (amount<? AND height<=?) OR (amount<? AND height<=?) OR (amount>=? AND height<=?))",
+			StatusPending, Dep0Amount, Dep1Amount, lorenzoBTCTip-1, Dep2Amount, lorenzoBTCTip-2, Dep3Amount, lorenzoBTCTip-3, Dep3Amount, lorenzoBTCTip-4).
 		Order("height ASC").Limit(BatchHandleBtcDepositTxsNum).Find(&txs).Error
 	if err != nil {
 		return nil, err
