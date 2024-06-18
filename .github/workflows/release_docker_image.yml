@@ -2,10 +2,10 @@
 #
 # On every new `vX.Y.Z` tag the following images are pushed:
 #
-# lorenzoprotocol/lorenzo:X.Y.Z    # is pushed
-# lorenzoprotocol/lorenzo:X.Y      # is updated to X.Y.Z
-# lorenzoprotocol/lorenzo:X        # is updated to X.Y.Z
-# lorenzoprotocol/lorenzo:latest   # is updated to X.Y.Z
+# lorenzoprotocol/lorenzo-btcstaking-submitter:X.Y.Z    # is pushed
+# lorenzoprotocol/lorenzo-btcstaking-submitter:X.Y      # is updated to X.Y.Z
+# lorenzoprotocol/lorenzo-btcstaking-submitter:X        # is updated to X.Y.Z
+# lorenzoprotocol/lorenzo-btcstaking-submitter:latest   # is updated to X.Y.Z
 
 name: Build and Publish Docker Image
 on:
@@ -56,6 +56,6 @@ jobs:
           push: true
           platforms: linux/amd64, linux/arm64
           tags: |
-            lorenzoprotocol/lorenzo:${{ env.MAJOR_VERSION }}
-            lorenzoprotocol/lorenzo:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}
-            lorenzoprotocol/lorenzo:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}
+            lorenzoprotocol/lorenzo-btcstaking-submitter:${{ env.MAJOR_VERSION }}
+            lorenzoprotocol/lorenzo-btcstaking-submitter:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}
+            lorenzoprotocol/lorenzo-btcstaking-submitter:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}
