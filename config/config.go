@@ -58,7 +58,7 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) CreateLogger() (*zap.Logger, error) {
-	return newRootLogger("auto", cfg.LogLevel == "debug")
+	return NewRootLogger("auto", cfg.LogLevel == "debug")
 }
 
 // NewConfig returns a fully parsed Config object from a given file directory

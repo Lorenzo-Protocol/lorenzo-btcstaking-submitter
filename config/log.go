@@ -12,7 +12,7 @@ import (
 
 // NewRootLogger creates a new logger object with the given format and log level
 // (copied from https://github.com/cosmos/relayer/blob/v2.4.2/cmd/root.go#L174-L202)
-func newRootLogger(format string, debug bool) (*zap.Logger, error) {
+func NewRootLogger(format string, debug bool) (*zap.Logger, error) {
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = func(ts time.Time, encoder zapcore.PrimitiveArrayEncoder) {
 		encoder.AppendString(ts.UTC().Format("2006-01-02T15:04:05.000000Z07:00"))
