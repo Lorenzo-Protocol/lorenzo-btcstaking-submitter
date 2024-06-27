@@ -1,8 +1,9 @@
-package main
+package cmd
 
 import (
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/blockscout"
 	"github.com/spf13/cobra"
+
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/blockscout"
 )
 
 func BlockscoutRefreshCmd() *cobra.Command {

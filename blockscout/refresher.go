@@ -121,7 +121,6 @@ func (r *Refresher) getBockscoutCurrentHeight() (uint64, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 		return 0, err
 	}
-	fmt.Println(respData.Result)
 
 	height, err := strconv.ParseUint(respData.Result, 0, 64)
 	if err != nil {
