@@ -29,5 +29,5 @@ value: $(pick a block height start from)
 ```
 # run blockscout refresher
 ```sh
- ./build/lrz-btcstaking-submitter refresh --blockscout-api $(blocksoutApiUrl) --lorenzo-app-api $(lorenzoAppApiUrl) --start-height 19999
+ ./build/lrz-btcstaking-submitter refresh --blockscout-api $(blocksoutApiUrl) --lorenzo-app-api $(lorenzoAppApiUrl) --start-height $(startLorenzoHeight)
 ```
