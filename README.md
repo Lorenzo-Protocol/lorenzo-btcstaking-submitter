@@ -27,3 +27,7 @@ value: $(pick a block height start from)
 ## replace ./sample-config.yml with your config file
 ./build/lrz-btcstaking-submitter --config ./sample-config.yml
 ```
+# run blockscout refresher
+```sh
+ ./build/lrz-btcstaking-submitter refresh --blockscout-api $(blocksoutApiUrl) --lorenzo-app-api $(lorenzoAppApiUrl) --start-height 19999
+```
