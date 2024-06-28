@@ -45,7 +45,7 @@ func (r *Refresher) Start() error {
 		}
 		startHeight := r.nextRefreshHeight
 		if blockscoutHeight < startHeight {
-			time.Sleep(time.Second * 30)
+			time.Sleep(time.Second * 6)
 			r.logger.Warn("blockscout height is less than start height",
 				zap.Uint64("blockscoutHeight", blockscoutHeight), zap.Uint64("startHeight", startHeight))
 			continue
