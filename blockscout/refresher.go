@@ -36,18 +36,20 @@ func NewRefresher(startHeight uint64, blockscoutApi string, lorenzoAppApi string
 }
 
 func (r *Refresher) Start() error {
+	networkErrorSleepTime := time.Millisecond * 300
+	lorenzoBlockHeightSleepTime := time.Second * 5
 	batchNum := uint64(1000)
 	for {
 		blockscoutHeight, err := r.getBockscoutCurrentHeight()
 		if err != nil {
-			time.Sleep(time.Second)
+			time.Sleep(networkErrorSleepTime)
 			continue
 		}
 		startHeight := r.nextRefreshHeight
 		if blockscoutHeight < startHeight {
-			time.Sleep(time.Second * 6)
 			r.logger.Warn("blockscout height is less than start height",
 				zap.Uint64("blockscoutHeight", blockscoutHeight), zap.Uint64("startHeight", startHeight))
+			time.Sleep(lorenzoBlockHeightSleepTime)
 			continue
 		}
 
@@ -58,14 +60,14 @@ func (r *Refresher) Start() error {
 
 		eventScanCursor, err := r.getLorenzoEventScanCursor()
 		if err != nil {
-			time.Sleep(time.Microsecond * 100)
 			r.logger.Warn("get EventScanCursor failed", zap.Error(err))
+			time.Sleep(networkErrorSleepTime)
 			continue
 		}
 		if eventScanCursor < startHeight {
 			r.logger.Warn("event scan cursor is less than start height",
 				zap.Uint64("eventScanCursor", eventScanCursor), zap.Uint64("startHeight", startHeight))
-			time.Sleep(time.Second * 3)
+			time.Sleep(lorenzoBlockHeightSleepTime)
 			continue
 		}
 		if eventScanCursor+1 < endHeight {
@@ -73,8 +75,8 @@ func (r *Refresher) Start() error {
 		}
 		events, err := r.getLorenzoBurnOrEventListByHeightRange(r.lorenzoAppApi, startHeight, endHeight)
 		if err != nil {
-			time.Sleep(time.Microsecond * 100)
 			r.logger.Warn("get events failed", zap.Error(err))
+			time.Sleep(networkErrorSleepTime)
 			continue
 		}
 
@@ -88,17 +90,17 @@ func (r *Refresher) Start() error {
 		for i < len(events) {
 			event := events[i]
 			if err := r.refreshBlockscoutBalance(event.LorenzoAddr, event.LorenzoBlockHeight); err != nil {
-				time.Sleep(time.Second)
 				r.logger.Warn("refresh failed", zap.Error(err))
+				time.Sleep(networkErrorSleepTime)
 				continue
 			}
 
-			r.logger.Info("finish refresh account balance", zap.String("address", event.LorenzoAddr),
+			r.logger.Info("account balance refreshed", zap.String("address", event.LorenzoAddr),
 				zap.Uint64("height", event.LorenzoBlockHeight))
 			i++
 		}
 
-		r.logger.Error("finish refresh", zap.Int("total", len(events)))
+		r.logger.Info("finish refresh", zap.Int("total", len(events)), zap.Uint64("fromHeight", r.nextRefreshHeight), zap.Uint64("toHeight", endHeight))
 		r.nextRefreshHeight = endHeight
 	}
 }
