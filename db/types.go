@@ -27,6 +27,7 @@ func (ConfigTable) TableName() string {
 }
 
 type BtcDepositTx struct {
+	AgentId         uint64
 	ReceiverName    string `gorm:"size:256"`
 	ReceiverAddress string `gorm:"size:256"`
 	Amount          uint64

@@ -11,20 +11,12 @@ import (
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/txrelayer"
 )
 
-const DefaultConfigFile = "./.testnet/sample-config.yml"
-
-var configFile string
-var rootCmd = &cobra.Command{
-	Use:   "lrz-btcstaking-submitter",
-	Short: "Lorenzo BTC Staking Submitter",
-	Run:   Main,
-}
-
-func init() {
-	rootCmd.Flags().StringVarP(&configFile, "config", "c", DefaultConfigFile, "config file")
-}
-
 func Main(c *cobra.Command, _ []string) {
+	configFile, err := c.Flags().GetString("config")
+	if err != nil {
+		panic(err)
+	}
+
 	cfg, err := config.NewConfig(configFile)
 	if err != nil {
 		panic(err)
@@ -58,6 +50,13 @@ func Main(c *cobra.Command, _ []string) {
 }
 
 func main() {
+	rootCmd := &cobra.Command{
+		Use:   "lrz-btcstaking-submitter",
+		Short: "Lorenzo BTC Staking Submitter",
+		Run:   Main,
+	}
+
+	rootCmd.Flags().StringP("config", "c", "./.testnet/sample-config.yml", "config file")
 	rootCmd.AddCommand(cmd.BlockscoutRefreshCmd())
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)
