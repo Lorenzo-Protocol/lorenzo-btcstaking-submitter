@@ -52,7 +52,7 @@ func (db *MysqlDB) UpdateSyncPoint(height uint64) error {
 	cfg.Name = db.syncPointKey
 	cfg.Value = big.NewInt(0).SetUint64(height).String()
 
-	return db.db.Model(&ConfigTable{}).Where("name = ? and value<?", cfg.Name, cfg.Value).Updates(cfg).Error
+	return db.db.Model(&ConfigTable{}).Where("name = ?", cfg.Name).Updates(cfg).Error
 }
 
 func (db *MysqlDB) GetSyncPoint() (uint64, error) {

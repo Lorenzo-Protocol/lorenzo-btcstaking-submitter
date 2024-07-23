@@ -42,8 +42,6 @@ type TxRelayer struct {
 
 	// btc deposit tx receiver
 	receivers []*types.Receiver
-	// current synchronize point
-	syncPoint uint64
 
 	wg sync.WaitGroup
 }
@@ -55,7 +53,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		return nil, err
 	}
 
-	syncPoint, err := database.GetSyncPoint()
+	_, err = database.GetSyncPoint()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +67,6 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		lorenzoClient:                lorenzoClient,
 		db:                           database,
 		btcParam:                     btcParam,
-		syncPoint:                    syncPoint,
 		submitter:                    lorenzoClient.MustGetAddr(),
 
 		wg: sync.WaitGroup{},
@@ -118,9 +115,16 @@ func (r *TxRelayer) scanBlockLoop() {
 			continue
 		}
 
-		nextBlockHeightToFetch := r.syncPoint + 1
+		syncPoint, err := r.GetSyncPoint()
+		if err != nil {
+			r.logger.Errorf("Failed to get sync point, error: %v", err)
+			time.Sleep(connectErrWaitInterval)
+			continue
+		}
+
+		nextBlockHeightToFetch := syncPoint + 1
 		if btcTip < nextBlockHeightToFetch+r.delayBlocks {
-			r.logger.Infof("No new block, current tip: %d, syncPoint:%d", btcTip, r.syncPoint)
+			r.logger.Infof("No new block, current tip: %d, syncPoint:%d", btcTip, syncPoint)
 			time.Sleep(btcInterval)
 			continue
 		}
@@ -235,8 +239,11 @@ func (r *TxRelayer) updateSyncPoint(newPoint uint64) error {
 		return err
 	}
 
-	r.syncPoint = newPoint
 	return nil
+}
+
+func (r *TxRelayer) GetSyncPoint() (uint64, error) {
+	return r.db.GetSyncPoint()
 }
 
 func (r *TxRelayer) getValidDepositTxs(blockHeight uint64, msgBlock *wire.MsgBlock) []*db.BtcDepositTx {
@@ -269,7 +276,8 @@ MainLoop:
 				value, err = btc.ExtractPaymentTo(tx, receiverAddr)
 			}
 			if err != nil {
-				r.logger.Warnf("Invalid tx, txid:%s, error: %v", txid, err)
+				r.logger.Warnf("Invalid tx, txid:%s, error: %v, receiverBTCAddress: %s, receiverName: %s, ethAddr:%v",
+					txid, err, receiver.Addr, receiver.Name, receiver.EthAddr)
 				continue MainLoop
 			}
 
@@ -352,20 +360,6 @@ func (r *TxRelayer) updateDepositTxStatus(txid string, status int) {
 }
 
 func (r *TxRelayer) newMsgCreateBTCStaking(receiverName string, receiverAddressHex string, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
-	//receiverAddress, err := btcutil.DecodeAddress(receiverAddressHex, r.btcParam)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//stakingMsgTx, err := btc.NewBTCTxFromBytes(txBytes)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//_, _, err = btc.ExtractPaymentToWithOpReturnId(stakingMsgTx, receiverAddress)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	merkleBlock, err := keeper.ParseMerkleBlock(proofRaw)
 	if err != nil {
 		return nil, err
