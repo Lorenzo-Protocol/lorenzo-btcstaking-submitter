@@ -1,10 +1,12 @@
-package evmclient
+package bnbclient
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"strings"
 
+	bnblightclienttypes "github.com/Lorenzo-Protocol/lorenzo/v2/x/bnblightclient/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,11 +14,19 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+type ReceiptWithProof struct {
+	Receipt *types.Receipt
+	Proof   *bnblightclienttypes.Proof
+}
+
 var (
 	StakeBTC2JoinStakePlanEventTopic = crypto.Keccak256Hash([]byte("StakeBTC2JoinStakePlan(uint256,uint256,address,address,uint256,uint256)"))
 )
 
 type StakeBTC2JoinStakePlanEvent struct {
+	Txhash    common.Hash `abi:"-"`
+	BlockHash common.Hash `abi:"-"`
+
 	StakeIndex         *big.Int       `abi:"stakeIndex"`
 	PlanId             *big.Int       `abi:"planId"`
 	User               common.Address `abi:"user"`
@@ -48,51 +58,71 @@ func (c *Client) GetStakeBTC2JoinStakePlanEventByRangeBlock(planStakeHubAddress 
 		event.PlanId = log.Topics[2].Big()
 		event.User = common.BytesToAddress(log.Topics[3].Bytes())
 
+		//init txhash and blockHash
+		event.Txhash = log.TxHash
+		event.BlockHash = log.BlockHash
+
 		events = append(events, event)
 	}
 
 	return events, nil
 }
 
-// GetStakeBTC2JoinStakePlanReceipts get all receipts of StakeBTC2JoinStakePlan event
-func (c *Client) GetStakeBTC2JoinStakePlanReceipts(planStakeHubAddress common.Address, start, end uint64) ([]*types.Receipt, error) {
-	var stakeBTC2JoinStakePlanReceipts []*types.Receipt
+// GetStakeBTC2JoinStakePlanReceiptsWithProof get all receipts of StakeBTC2JoinStakePlan event
+func (c *Client) GetStakeBTC2JoinStakePlanReceiptsWithProof(planStakeHubAddress common.Address, start, end uint64) ([]*ReceiptWithProof, error) {
+	var stakeBTC2JoinStakePlanReceiptWithProofList []*ReceiptWithProof
 
-	for number := start; number <= end; number++ {
-		receipts, err := c.ReceiptsByBlockNumber(number)
+	stakeBTC2JoinStakePlanEvents, err := c.GetStakeBTC2JoinStakePlanEventByRangeBlock(planStakeHubAddress, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	txhashSet := map[common.Hash]common.Hash{}
+	for _, event := range stakeBTC2JoinStakePlanEvents {
+		txhashSet[event.Txhash] = event.BlockHash
+	}
+	for txhash, blockHash := range txhashSet {
+		receipts, err := c.ReceiptsByBlockHash(blockHash)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, receipt := range receipts {
-			for _, log := range receipt.Logs {
-				// if contract address is not planStakeHubAddress, skip
-				if log.Address != planStakeHubAddress {
-					continue
-				}
-				if log.Topics[0] == StakeBTC2JoinStakePlanEventTopic {
-					// append receipt to stakeBTC2JoinStakePlanReceipts if it contains StakeBTC2JoinStakePlan event
-					stakeBTC2JoinStakePlanReceipts = append(stakeBTC2JoinStakePlanReceipts, receipt)
-					break
-				}
+		var receipt *types.Receipt
+		for _, r := range receipts {
+			if r.TxHash == txhash {
+				receipt = r
+				break
 			}
 		}
+		if receipt == nil {
+			return nil, errors.New("receipt not found in his block, it's impossible, maybe something wrong")
+		}
+
+		//generate receipt proof
+		proof, err := bnblightclienttypes.GenReceiptProof(uint64(receipt.TransactionIndex), receipt.BlockHash, receipts)
+		if err != nil {
+			return nil, err
+		}
+
+		receiptWithProof := &ReceiptWithProof{
+			Receipt: receipt,
+			Proof:   proof,
+		}
+		stakeBTC2JoinStakePlanReceiptWithProofList = append(stakeBTC2JoinStakePlanReceiptWithProofList, receiptWithProof)
 	}
 
-	return stakeBTC2JoinStakePlanReceipts, nil
+	return stakeBTC2JoinStakePlanReceiptWithProofList, nil
 }
 
 func (c *Client) getStakeBTC2JoinStakePlanEvents(planStakeHubAddress common.Address, start, end uint64) ([]types.Log, error) {
-	eventSignature := []byte("StakeBTC2JoinStakePlan(uint256,uint256,address,address,uint256,uint256)")
-	eventTopic := crypto.Keccak256Hash(eventSignature)
 	query := ethereum.FilterQuery{
 		BlockHash: nil,
 		FromBlock: big.NewInt(0).SetUint64(start),
 		ToBlock:   big.NewInt(0).SetUint64(end),
 		Addresses: []common.Address{planStakeHubAddress},
-		Topics:    [][]common.Hash{{eventTopic}},
+		Topics:    [][]common.Hash{{StakeBTC2JoinStakePlanEventTopic}},
 	}
-	logs, err := c.client.FilterLogs(context.Background(), query)
+	logs, err := c.ethClient.FilterLogs(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}

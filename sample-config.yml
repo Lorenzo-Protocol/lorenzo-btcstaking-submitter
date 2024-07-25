@@ -9,6 +9,11 @@ tx-relayer:
   # BTC network type:mainet/testnet/signet
   netParams: testnet
 
+bnb-tx-relayer:
+  planStakeHubAddress: 0xabcd
+  confirmationDepth: 6
+  rpcUrl: https://bsc-dataseed1.binance.org
+
 database:
   host:
   port: 3306

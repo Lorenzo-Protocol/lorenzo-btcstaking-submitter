@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
-	lrztypes "github.com/Lorenzo-Protocol/lorenzo/types"
-	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/keeper"
-	"github.com/Lorenzo-Protocol/lorenzo/x/btcstaking/types"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
+	lrztypes "github.com/Lorenzo-Protocol/lorenzo/v2/types"
+	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/keeper"
+	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/types"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -29,6 +29,7 @@ var (
 )
 
 type TxRelayer struct {
+	chainName                    string
 	logger                       *zap.SugaredLogger
 	delayBlocks                  uint64
 	lorenzoBtcConfirmationsDepth uint64 // lorenzo btc staking tx confirmation depth
@@ -43,7 +44,8 @@ type TxRelayer struct {
 	// btc deposit tx receiver
 	receivers []*types.Receiver
 
-	wg sync.WaitGroup
+	wg   sync.WaitGroup
+	quit chan struct{}
 }
 
 func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
@@ -60,7 +62,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	btcParam := btc.GetBTCParams(conf.NetParams)
 
 	txRelayer := &TxRelayer{
-		logger:                       logger,
+		chainName:                    "btc",
 		delayBlocks:                  conf.ConfirmationDepth,
 		lorenzoBtcConfirmationsDepth: uint64(btcStakingParams.Params.BtcConfirmationsDepth),
 		btcQuery:                     btcQuery,
@@ -69,16 +71,18 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		btcParam:                     btcParam,
 		submitter:                    lorenzoClient.MustGetAddr(),
 
-		wg: sync.WaitGroup{},
+		wg:   sync.WaitGroup{},
+		quit: make(chan struct{}),
 	}
+	txRelayer.logger = logger.Named(txRelayer.chainName)
 	txRelayer.updateBtcReceiverList(btcStakingParams.Params.Receivers)
 
-	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d, submitter: %s",
+	txRelayer.logger.Infof("new txRelayer on BTC network: %s, confirmation: %d, submitter: %s",
 		conf.NetParams, conf.ConfirmationDepth, txRelayer.submitter)
 	return txRelayer, nil
 }
 
-func (r *TxRelayer) Start() error {
+func (r *TxRelayer) Start() {
 	r.wg.Add(2)
 	go func() {
 		defer r.wg.Done()
@@ -88,9 +92,18 @@ func (r *TxRelayer) Start() error {
 		defer r.wg.Done()
 		go r.submitLoop()
 	}()
+}
 
+func (r *TxRelayer) Stop() {
+	close(r.quit)
+}
+
+func (r *TxRelayer) WaitForShutdown() {
 	r.wg.Wait()
-	return nil
+}
+
+func (r *TxRelayer) ChainName() string {
+	return r.chainName
 }
 
 // TODO: update btc receiver list when Lorenzo btc staking receiver list update
@@ -108,6 +121,12 @@ func (r *TxRelayer) scanBlockLoop() {
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
+		select {
+		case <-r.quit:
+			return
+		default:
+		}
+
 		btcTip, err := r.btcQuery.GetBTCCurrentHeight()
 		if err != nil {
 			r.logger.Errorf("Failed to get btc tip, error: %v", err)
@@ -156,6 +175,12 @@ func (r *TxRelayer) submitLoop() {
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
+		select {
+		case <-r.quit:
+			return
+		default:
+		}
+
 		lorenzoBTCTipResponse, err := r.lorenzoClient.BTCHeaderChainTip()
 		if err != nil {
 			r.logger.Errorf("Failed to get lorenzo btc tip, error: %v", err)

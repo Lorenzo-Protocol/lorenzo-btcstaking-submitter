@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/config"
+	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
+
+const AppName = "submitter"
 
 const (
 	MinConfirmationDepth = 1
@@ -20,6 +22,7 @@ type Config struct {
 	LogLevel       string               `mapstructure:"logLevel"`
 	Lorenzo        lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 	TxRelayer      TxRelayerConfig      `mapstructure:"tx-relayer"`
+	BNBTxRelayer   BNBTxRelayerConfig   `mapstructure:"bnb-tx-relayer"`
 
 	Database Database `mapstructure:"database"`
 }
@@ -40,6 +43,20 @@ type TxRelayerConfig struct {
 func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth < MinConfirmationDepth {
 		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
+	}
+
+	return nil
+}
+
+type BNBTxRelayerConfig struct {
+	RpcUrl              string `mapstructure:"rpcUrl"`
+	PlanStakeHubAddress string `mapstructure:"planStakeHubAddress"`
+	ConfirmationDepth   uint64 `mapstructure:"confirmationDepth"`
+}
+
+func (cfg *BNBTxRelayerConfig) Validate() error {
+	if len(cfg.RpcUrl) == 0 {
+		return fmt.Errorf("")
 	}
 
 	return nil
