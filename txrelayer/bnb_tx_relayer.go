@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ const (
 	DefaultDelayBlocks           = uint64(15)
 )
 
-var (
+const (
 	LorenzoBNBDuplicateErrorMessage = "duplicated receipt"
 )
 
@@ -41,13 +42,13 @@ type BNBTxRelayer struct {
 	submitter string
 }
 
-func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
+func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoConfig *lrzcfg.LorenzoConfig, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
 	bnbClient, err := bnbclient.New(cfg.RpcUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
+	lorenzoClient, err := lrzclient.New(lorenzoConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +66,8 @@ func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, logger *zap.SugaredLogger) (
 	}
 	txRelayer.logger = logger.Named(txRelayer.chainName)
 
+	txRelayer.logger.Infof("new Relayer on BNB Smart Chain, confirmations: %d, submitter: %s",
+		txRelayer.delayBlocks+1, txRelayer.submitter)
 	return txRelayer, nil
 }
 
@@ -164,8 +167,9 @@ func (r *BNBTxRelayer) submit(receiptWithProofList []*bnbclient.ReceiptWithProof
 		_, err := r.lorenzoClient.BNBCreateBTCStakingWithProof(context.Background(), msg)
 		if err != nil {
 			switch {
-			// TODO: check error message, decide to retry or not
-			case strings.Contains(err.Error(), LorenzoBNBDuplicateErrorMessage):
+			case isBNBStakingDuplicate(err):
+				i++
+			case isBNBStakingRetryError(err):
 				i++
 			default:
 				return err
@@ -187,4 +191,14 @@ func (r *BNBTxRelayer) Stop() {
 
 func (r *BNBTxRelayer) WaitForShutdown() {
 	r.wg.Wait()
+}
+
+func isBNBStakingRetryError(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), LorenzoTimeoutErrorMessage) ||
+		strings.Contains(err.Error(), PostFailedMessage) ||
+		strings.Contains(err.Error(), SequenceMismatch))
+}
+
+func isBNBStakingDuplicate(err error) bool {
+	return err != nil && strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage)
 }

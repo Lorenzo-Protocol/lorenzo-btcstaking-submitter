@@ -21,7 +21,8 @@ type Config struct {
 	TxRelayer    TxRelayerConfig    `mapstructure:"tx-relayer"`
 	BNBTxRelayer BNBTxRelayerConfig `mapstructure:"bnb-tx-relayer"`
 
-	Database Database `mapstructure:"database"`
+	Database Database             `mapstructure:"database"`
+	Lorenzo  lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 }
 
 type Database struct {
@@ -36,8 +37,6 @@ type TxRelayerConfig struct {
 	BtcApiEndpoint    string `mapstructure:"btcApiEndpoint"`
 	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
 	NetParams         string `mapstructure:"netParams"`
-
-	Lorenzo lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 }
 
 func (cfg *TxRelayerConfig) Validate() error {
@@ -48,11 +47,6 @@ func (cfg *TxRelayerConfig) Validate() error {
 		return errors.New("BtcApiEndpoint is empty")
 	}
 
-	fillLorenzoConfigDefaultValueIfNotSet(&cfg.Lorenzo)
-	if err := cfg.Lorenzo.Validate(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -60,18 +54,11 @@ type BNBTxRelayerConfig struct {
 	RpcUrl              string `mapstructure:"rpcUrl"`
 	PlanStakeHubAddress string `mapstructure:"planStakeHubAddress"`
 	ConfirmationDepth   uint64 `mapstructure:"confirmationDepth"`
-
-	Lorenzo lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
 }
 
 func (cfg *BNBTxRelayerConfig) Validate() error {
 	if len(cfg.RpcUrl) == 0 {
 		return fmt.Errorf("rpcUrl is empty")
-	}
-
-	fillLorenzoConfigDefaultValueIfNotSet(&cfg.Lorenzo)
-	if err := cfg.Lorenzo.Validate(); err != nil {
-		return err
 	}
 
 	return nil
@@ -82,6 +69,11 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 	if err := cfg.BNBTxRelayer.Validate(); err != nil {
+		return err
+	}
+
+	fillLorenzoConfigDefaultValueIfNotSet(&cfg.Lorenzo)
+	if err := cfg.Lorenzo.Validate(); err != nil {
 		return err
 	}
 

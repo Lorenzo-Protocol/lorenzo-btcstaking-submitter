@@ -36,13 +36,13 @@ func RootAction(c *cobra.Command, _ []string) {
 	logger := rootLogger.With().Sugar()
 
 	var txRelayerList []txrelayer.ITxRelayer
-	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer)
+	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, &cfg.Lorenzo)
 	if err != nil {
 		panic(err)
 	}
 	txRelayerList = append(txRelayerList, txRelayer)
 
-	//bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, logger)
+	//bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, &cfg.Lorenzo, logger)
 	//if err != nil {
 	//	panic(err)
 	//}

@@ -2,6 +2,7 @@ package txrelayer
 
 import (
 	"context"
+	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
 	"strings"
 	"sync"
 	"time"
@@ -18,14 +19,6 @@ import (
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
-)
-
-var (
-	LorenzoBtcStakingNotConfirmedErrorMessage = "not k-deep"
-	LorenzoBtcStakingDuplicateTxErrorMessage  = "duplicate btc transaction"
-	LorenzoTimeoutErrorMessage                = "context deadline exceeded"
-	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
-	PostFailedMessage                         = "post failed"
 )
 
 type TxRelayer struct {
@@ -48,8 +41,8 @@ type TxRelayer struct {
 	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig) (*TxRelayer, error) {
-	lorenzoClient, err := lrzclient.New(&conf.Lorenzo, nil)
+func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoConfig *lrzcfg.LorenzoConfig) (*TxRelayer, error) {
+	lorenzoClient, err := lrzclient.New(lorenzoConfig, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -83,8 +76,8 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	txRelayer.logger = logger.Named(txRelayer.chainName)
 	txRelayer.updateBtcReceiverList(btcStakingParams.Params.Receivers)
 
-	txRelayer.logger.Infof("new txRelayer on BTC network: %s, confirmation: %d, submitter: %s",
-		conf.NetParams, conf.ConfirmationDepth, txRelayer.submitter)
+	txRelayer.logger.Infof("new txRelayer on BTC network: %s, confirmations: %d, submitter: %s",
+		conf.NetParams, txRelayer.delayBlocks+1, txRelayer.submitter)
 	return txRelayer, nil
 }
 
@@ -252,6 +245,8 @@ func (r *TxRelayer) submitLoop() {
 					r.updateDepositTxStatus(tx.Txid, db.StatusInvalid)
 					i++ // skip this tx
 				}
+
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 
@@ -425,5 +420,6 @@ func isStakingMintTryAgainError(err error) bool {
 		strings.Contains(err.Error(), LorenzoBtcStakingNotConfirmedErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage) ||
-		strings.Contains(err.Error(), PostFailedMessage))
+		strings.Contains(err.Error(), PostFailedMessage) ||
+		strings.Contains(err.Error(), SequenceMismatch))
 }
