@@ -41,14 +41,19 @@ type BNBTxRelayer struct {
 	submitter string
 }
 
-func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Client, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
+func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
 	bnbClient, err := bnbclient.New(cfg.RpcUrl)
 	if err != nil {
 		return nil, err
 	}
 
+	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	txRelayer := &BNBTxRelayer{
-		chainName:     "bnb",
+		chainName:     "BNB",
 		bnbClient:     bnbClient,
 		lorenzoClient: lorenzoClient,
 		delayBlocks:   DefaultDelayBlocks,

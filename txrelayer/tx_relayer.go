@@ -48,7 +48,13 @@ type TxRelayer struct {
 	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig) (*TxRelayer, error) {
+	lorenzoClient, err := lrzclient.New(&conf.Lorenzo, nil)
+	if err != nil {
+		panic(err)
+	}
+	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
+
 	// get btc staking params to get btc deposit receivers
 	btcStakingParams, err := lorenzoClient.QueryBTCStakingParams()
 	if err != nil {
@@ -62,7 +68,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	btcParam := btc.GetBTCParams(conf.NetParams)
 
 	txRelayer := &TxRelayer{
-		chainName:                    "btc",
+		chainName:                    "BTC",
 		delayBlocks:                  conf.ConfirmationDepth,
 		lorenzoBtcConfirmationsDepth: uint64(btcStakingParams.Params.BtcConfirmationsDepth),
 		btcQuery:                     btcQuery,

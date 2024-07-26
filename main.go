@@ -13,9 +13,9 @@ func main() {
 		Run:   cmd.RootAction,
 	}
 	rootCmd.Flags().StringP("config", "c", "./.testnet/sample-config.yml", "config file")
+	rootCmd.Flags().Bool("debug", false, "open debug mode")
 
 	rootCmd.AddCommand(cmd.BlockscoutRefreshCmd())
-	rootCmd.AddCommand(cmd.BNBTxRelayerCmd())
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)
 	}

@@ -1,16 +1,19 @@
 package cmd
 
 import (
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/txrelayer"
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
 	"github.com/spf13/cobra"
 )
 
 func RootAction(c *cobra.Command, _ []string) {
 	configFile, err := c.Flags().GetString("config")
+	if err != nil {
+		panic(err)
+	}
+
+	debugMode, err := c.Flags().GetBool("debug")
 	if err != nil {
 		panic(err)
 	}
@@ -26,31 +29,34 @@ func RootAction(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	btcQuery := btc.NewBTCQuery(cfg.BtcApiEndpoint)
-
-	rootLogger, err := cfg.CreateLogger()
+	rootLogger, err := cfg.CreateLogger(debugMode)
 	if err != nil {
 		panic(err)
 	}
 	logger := rootLogger.With().Sugar()
 
-	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, btcQuery, lorenzoClient)
+	var txRelayerList []txrelayer.ITxRelayer
+	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer)
 	if err != nil {
 		panic(err)
 	}
-	txRelayer.Start()
+	txRelayerList = append(txRelayerList, txRelayer)
 
-	addInterruptHandler(func() {
-		rootLogger.Info("Stopping BTC Tx-relayer...")
-		txRelayer.Stop()
-		txRelayer.WaitForShutdown()
-		rootLogger.Info("BTC Tx-relayer shutdown")
-	})
+	//bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, logger)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//txRelayerList = append(txRelayerList, bnbTxRelayer)
+
+	for _, txRelayer := range txRelayerList {
+		txRelayer.Start()
+		addInterruptHandler(func() {
+			rootLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
+			txRelayer.Stop()
+			txRelayer.WaitForShutdown()
+			rootLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
+		})
+	}
 
 	<-interruptHandlersDone
 	rootLogger.Info("Shutdown complete")

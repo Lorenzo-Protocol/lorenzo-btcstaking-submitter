@@ -1,18 +1,33 @@
-# debug/info
-logLevel: debug
-# BTC blockstream api
-# https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: ~
-
 tx-relayer:
-  confirmationDepth: 6
+  confirmationDepth: 1
   # BTC network type:mainet/testnet/signet
   netParams: testnet
+  # BTC blockstream api
+  # https://github.com/Blockstream/esplora/blob/master/API.md
+  btcApiEndpoint: ~
+  lorenzo:
+    # cosmos Keyring
+    # The keyring holds the private/public keypairs used to interact with a node
+    # more detail: https://docs.cosmos.network/v0.45/run-node/keyring.html
+    key: submitter
+    key-directory: ./.testnet/node0/lorenzod
+    # Select keyring's backend (os|file|test)
+    keyring-backend: test
+    # lorenzo genesis file chain-id
+    chain-id: lorenzod_83291-1
+    # lorenzo rpc
+    rpc-addr: ~
 
 bnb-tx-relayer:
   planStakeHubAddress: 0xabcd
-  confirmationDepth: 6
+  confirmationDepth: 5
   rpcUrl: https://bsc-dataseed1.binance.org
+  lorenzo:
+    key: submitter
+    key-directory: ./.testnet/node0/lorenzod
+    keyring-backend: test
+    chain-id: lorenzod_83291-1
+    rpc-addr: ~
 
 database:
   host:
@@ -20,24 +35,3 @@ database:
   username: admin
   password: admin
   dbname: lorenzo
-
-lorenzo:
-  # cosmos Keyring
-  # The keyring holds the private/public keypairs used to interact with a node
-  # more detail: https://docs.cosmos.network/v0.45/run-node/keyring.html
-  key: submitter
-  key-directory: ./.testnet/node0/lorenzod
-  # Select keyring's backend (os|file|test)
-  keyring-backend: test
-  # lorenzo genesis file chain-id
-  chain-id: lorenzod_83291-1
-  # lorenzo rpc
-  rpc-addr: ~
-  # lorenzo cosmos account address prefix
-  account-prefix: lrz
-  gas-adjustment: 1.5
-  gas-prices: 0alrz
-  debug: true
-  timeout: 20s
-  output-format: json
-  sign-mode: direct
