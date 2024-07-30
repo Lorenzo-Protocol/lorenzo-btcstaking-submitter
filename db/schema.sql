@@ -1,6 +1,7 @@
 CREATE TABLE `btc_deposit_tx` (
   `id` int NOT NULL AUTO_INCREMENT,
   `txid` varchar(256) NOT NULL,
+  `agent_id` bigint NOT NULL ,
   `receiver_name` varchar(256),
   `receiver_address` varchar(256),
   `amount` bigint,
