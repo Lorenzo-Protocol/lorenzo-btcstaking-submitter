@@ -1,7 +1,7 @@
 package main
 
 import (
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/client"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
 	"github.com/spf13/cobra"
 
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/config"
+	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
