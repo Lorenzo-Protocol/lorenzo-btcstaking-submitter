@@ -2,10 +2,12 @@ package db
 
 import (
 	"fmt"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
 )
 
 var DB *gorm.DB
