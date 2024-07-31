@@ -19,8 +19,11 @@ func RootAction(c *cobra.Command, _ []string) {
 	if err != nil {
 		panic(err)
 	}
+	if err := db.Init(cfg.Database); err != nil {
+		panic(err)
+	}
 
-	database, err := db.NewMysqlDB(cfg.Database)
+	database, err := db.NewBTCRepository()
 	if err != nil {
 		panic(err)
 	}

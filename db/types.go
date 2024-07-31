@@ -15,14 +15,14 @@ type BaseTable struct {
 	CreatedTime time.Time `gorm:"autoCreateTime"`
 }
 
-type ConfigTable struct {
+type Config struct {
 	Name  string
 	Value string
 
 	BaseTable
 }
 
-func (ConfigTable) TableName() string {
+func (Config) TableName() string {
 	return "config"
 }
 

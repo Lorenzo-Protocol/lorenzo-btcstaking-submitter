@@ -13,7 +13,7 @@ package db
 //		t.Fatal(err)
 //	}
 //
-//	mysqlDB, err := NewMysqlDB(cfg.Database)
+//	mysqlDB, err := NewBTCRepository(cfg.Database)
 //	if err != nil {
 //		t.Fatal(err)
 //	}

@@ -32,7 +32,7 @@ type TxRelayer struct {
 
 	btcQuery      *btc.BTCQuery
 	lorenzoClient *lrzclient.Client
-	db            db.IDB
+	repository    db.IBTCRepository
 
 	agents []agenttypes.Agent
 
@@ -40,7 +40,7 @@ type TxRelayer struct {
 	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+func NewTxRelayer(database db.IBTCRepository, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
 	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
 
 	_, err := database.GetSyncPoint()
@@ -55,7 +55,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		delayBlocks:   conf.ConfirmationDepth,
 		btcQuery:      btcQuery,
 		lorenzoClient: lorenzoClient,
-		db:            database,
+		repository:    database,
 		btcParam:      btcParam,
 		submitter:     lorenzoClient.MustGetAddr(),
 
@@ -128,7 +128,7 @@ func (r *TxRelayer) scanBlockLoop() {
 		}
 
 		depositTxs := r.getValidDepositTxs(nextBlockHeightToFetch, msgBlock)
-		if err := r.db.InsertBtcDepositTxs(depositTxs); err != nil {
+		if err := r.repository.InsertBtcDepositTxs(depositTxs); err != nil {
 			r.logger.Errorf("Failed to insert btc deposit txs,blockHeight:%d, error: %v", nextBlockHeightToFetch, err)
 			continue
 		}
@@ -154,7 +154,7 @@ func (r *TxRelayer) submitLoop() {
 			continue
 		}
 
-		txs, err := r.db.GetUnhandledBtcDepositTxs(lorenzoBTCTipResponse.Header.Height)
+		txs, err := r.repository.GetUnhandledBtcDepositTxs(lorenzoBTCTipResponse.Header.Height)
 		if err != nil {
 			r.logger.Errorf("Failed to get unhandled btc deposit txs, error: %v", err)
 			time.Sleep(connectErrWaitInterval)
@@ -177,7 +177,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 			if txStakingRecordResp.Record != nil {
-				if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
 					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 				}
 				i++ // skip transaction have been handled
@@ -215,7 +215,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 
-			if err := r.db.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
 				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 			}
 
@@ -226,7 +226,7 @@ func (r *TxRelayer) submitLoop() {
 }
 
 func (r *TxRelayer) updateSyncPoint(newPoint uint64) error {
-	if err := r.db.UpdateSyncPoint(newPoint); err != nil {
+	if err := r.repository.UpdateSyncPoint(newPoint); err != nil {
 		return err
 	}
 
@@ -234,7 +234,7 @@ func (r *TxRelayer) updateSyncPoint(newPoint uint64) error {
 }
 
 func (r *TxRelayer) GetSyncPoint() (uint64, error) {
-	return r.db.GetSyncPoint()
+	return r.repository.GetSyncPoint()
 }
 
 func (r *TxRelayer) getValidDepositTxs(blockHeight uint64, msgBlock *wire.MsgBlock) []*db.BtcDepositTx {
@@ -321,7 +321,7 @@ func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
 }
 
 func (r *TxRelayer) updateDepositTxStatus(txid string, status int) {
-	if err := r.db.UpdateTxStatus(txid, status); err != nil {
+	if err := r.repository.UpdateTxStatus(txid, status); err != nil {
 		r.logger.Errorf("Failed to update tx status to [%d], txid: %s, error: %v", status, txid, err)
 	}
 }
