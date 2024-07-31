@@ -22,15 +22,8 @@ import (
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
 )
 
-var (
-	LorenzoBtcStakingNotConfirmedErrorMessage = "not k-deep"
-	LorenzoBtcStakingDuplicateTxErrorMessage  = "duplicate btc transaction"
-	LorenzoTimeoutErrorMessage                = "context deadline exceeded"
-	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
-	PostFailedMessage                         = "post failed"
-)
-
 type TxRelayer struct {
+	chainName   string
 	logger      *zap.SugaredLogger
 	delayBlocks uint64
 
@@ -43,10 +36,13 @@ type TxRelayer struct {
 
 	agents []agenttypes.Agent
 
-	wg sync.WaitGroup
+	wg   sync.WaitGroup
+	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, btcQuery *btc.BTCQuery, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
+
 	_, err := database.GetSyncPoint()
 	if err != nil {
 		return nil, err
@@ -54,6 +50,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	btcParam := btc.GetBTCParams(conf.NetParams)
 
 	txRelayer := &TxRelayer{
+		chainName:     "BTC",
 		logger:        logger,
 		delayBlocks:   conf.ConfirmationDepth,
 		btcQuery:      btcQuery,
@@ -62,7 +59,8 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 		btcParam:      btcParam,
 		submitter:     lorenzoClient.MustGetAddr(),
 
-		wg: sync.WaitGroup{},
+		wg:   sync.WaitGroup{},
+		quit: make(chan struct{}),
 	}
 	if err := txRelayer.updateAgentsList(); err != nil {
 		return nil, err
@@ -73,7 +71,7 @@ func NewTxRelayer(database db.IDB, logger *zap.SugaredLogger, conf *config.TxRel
 	return txRelayer, nil
 }
 
-func (r *TxRelayer) Start() error {
+func (r *TxRelayer) Start() {
 	r.wg.Add(2)
 	go func() {
 		defer r.wg.Done()
@@ -83,9 +81,18 @@ func (r *TxRelayer) Start() error {
 		defer r.wg.Done()
 		go r.submitLoop()
 	}()
+}
 
+func (r *TxRelayer) Stop() {
+	close(r.quit)
+}
+
+func (r *TxRelayer) WaitForShutdown() {
 	r.wg.Wait()
-	return nil
+}
+
+func (r *TxRelayer) ChainName() string {
+	return r.chainName
 }
 
 func (r *TxRelayer) scanBlockLoop() {
@@ -402,5 +409,6 @@ func isStakingMintTryAgainError(err error) bool {
 		strings.Contains(err.Error(), LorenzoBtcStakingNotConfirmedErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage) ||
 		strings.Contains(err.Error(), LorenzoBtcHeaderNotFoundErrorMessage) ||
-		strings.Contains(err.Error(), PostFailedMessage))
+		strings.Contains(err.Error(), PostFailedMessage) ||
+		strings.Contains(err.Error(), SequenceMismatch))
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
 	"github.com/spf13/viper"
@@ -15,11 +16,8 @@ const (
 )
 
 type Config struct {
-	BtcApiEndpoint string               `mapstructure:"btcApiEndpoint"`
-	DBDir          string               `mapstructure:"dbDir"`
-	LogLevel       string               `mapstructure:"logLevel"`
-	Lorenzo        lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
-	TxRelayer      TxRelayerConfig      `mapstructure:"tx-relayer"`
+	Lorenzo   lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
+	TxRelayer TxRelayerConfig      `mapstructure:"tx-relayer"`
 
 	Database Database `mapstructure:"database"`
 }
@@ -35,6 +33,7 @@ type Database struct {
 type TxRelayerConfig struct {
 	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
 	NetParams         string `mapstructure:"netParams"`
+	BtcApiEndpoint    string `mapstructure:"btcApiEndpoint"`
 }
 
 func (cfg *TxRelayerConfig) Validate() error {
@@ -46,6 +45,7 @@ func (cfg *TxRelayerConfig) Validate() error {
 }
 
 func (cfg *Config) Validate() error {
+	cfg.fillDefaultValueIfNotSet()
 	if err := cfg.Lorenzo.Validate(); err != nil {
 		return err
 	}
@@ -57,8 +57,29 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) CreateLogger() (*zap.Logger, error) {
-	return NewRootLogger("auto", cfg.LogLevel == "debug")
+func (cfg *Config) fillDefaultValueIfNotSet() {
+	if cfg.Lorenzo.AccountPrefix == "" {
+		cfg.Lorenzo.AccountPrefix = "lrz"
+	}
+	if cfg.Lorenzo.GasAdjustment == 0 {
+		cfg.Lorenzo.GasAdjustment = 1.5
+	}
+	if cfg.Lorenzo.GasPrices == "" {
+		cfg.Lorenzo.GasPrices = "0alrz"
+	}
+	if cfg.Lorenzo.Timeout == 0 {
+		cfg.Lorenzo.Timeout = time.Second * 20
+	}
+	if cfg.Lorenzo.OutputFormat == "" {
+		cfg.Lorenzo.OutputFormat = "json"
+	}
+	if cfg.Lorenzo.SignModeStr == "" {
+		cfg.Lorenzo.SignModeStr = "direct"
+	}
+}
+
+func (cfg *Config) CreateLogger(debug bool) (*zap.Logger, error) {
+	return NewRootLogger("auto", debug)
 }
 
 // NewConfig returns a fully parsed Config object from a given file directory
