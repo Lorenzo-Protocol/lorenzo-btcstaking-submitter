@@ -12,7 +12,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/cometbft/cometbft v0.37.5 // indirect
-	github.com/cosmos/cosmos-sdk v0.47.11 //indirect
+	github.com/cosmos/cosmos-sdk v0.47.11
 	github.com/cosmos/relayer/v2 v2.4.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/gogo/protobuf v1.3.3 // indirect

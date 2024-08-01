@@ -1,5 +1,5 @@
 tx-relayer:
-  confirmationDepth: 6
+  confirmationDepth: 1
   # BTC network type:mainet/testnet/signet
   netParams: testnet
   # BTC blockstream api
