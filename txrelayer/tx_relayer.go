@@ -317,6 +317,7 @@ MainLoop:
 			}
 
 			depositTx := &db.BtcDepositTx{
+				AgentId:         agent.Id,
 				ReceiverName:    agent.Name,
 				ReceiverAddress: agent.BtcReceivingAddress,
 				Amount:          value,
