@@ -55,6 +55,7 @@ func RootAction(c *cobra.Command, _ []string) {
 		txRelayer.WaitForShutdown()
 		parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
 	})
+
 	<-interruptHandlersDone
 	parentLogger.Info("Shutdown complete")
 }

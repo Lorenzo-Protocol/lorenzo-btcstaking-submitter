@@ -99,6 +99,12 @@ func (r *TxRelayer) scanBlockLoop() {
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
+		select {
+		case <-r.quit:
+			return
+		default:
+		}
+
 		btcTip, err := r.btcQuery.GetBTCCurrentHeight()
 		if err != nil {
 			r.logger.Errorf("Failed to get btc tip, error: %v", err)
@@ -147,6 +153,12 @@ func (r *TxRelayer) submitLoop() {
 	connectErrWaitInterval := time.Second
 	btcInterval := time.Minute
 	for {
+		select {
+		case <-r.quit:
+			return
+		default:
+		}
+
 		lorenzoBTCTipResponse, err := r.lorenzoClient.BTCHeaderChainTip()
 		if err != nil {
 			r.logger.Errorf("Failed to get lorenzo btc tip, error: %v", err)
