@@ -9,9 +9,10 @@ import (
 const submitterBtcSyncPointKey = "submitter/btc-sync-point"
 
 const (
-	StatusPending = 0
-	StatusHandled = 1
-	StatusInvalid = 2
+	StatusPending                    = 0
+	StatusHandled                    = 1
+	StatusInvalid                    = 2
+	StatusReceiverIsNotBelongToAgent = 3
 )
 
 const (

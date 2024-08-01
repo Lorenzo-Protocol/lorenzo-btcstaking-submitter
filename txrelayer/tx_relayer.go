@@ -197,6 +197,18 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 
+			if tx.AgentId == 0 {
+				agent := r.GetAgentByAddress(tx.ReceiverAddress)
+				if agent == nil {
+					r.logger.Warnf("Agent not found for btc deposit tx, txid: %s, receiverAddress: %s", tx.Txid, tx.ReceiverAddress)
+					r.updateDepositTxStatus(tx.Txid, db.StatusReceiverIsNotBelongToAgent)
+					i++
+					continue
+				}
+
+				tx.AgentId = agent.Id
+			}
+
 			msg, err := r.newMsgCreateBTCStaking(tx.AgentId, r.submitter, proofRaw, txBytes)
 			if err != nil {
 				r.logger.Errorf("Failed to create msgCreateBTCStaking: %v", err)
