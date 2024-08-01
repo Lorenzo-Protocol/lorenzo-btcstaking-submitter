@@ -15,18 +15,19 @@ type BaseTable struct {
 	CreatedTime time.Time `gorm:"autoCreateTime"`
 }
 
-type ConfigTable struct {
+type Config struct {
 	Name  string
 	Value string
 
 	BaseTable
 }
 
-func (ConfigTable) TableName() string {
+func (Config) TableName() string {
 	return "config"
 }
 
 type BtcDepositTx struct {
+	AgentId         uint64 `gorm:"index, default:0"`
 	ReceiverName    string `gorm:"size:256"`
 	ReceiverAddress string `gorm:"size:256"`
 	Amount          uint64

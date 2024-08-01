@@ -1,13 +1,10 @@
-# debug/info
-logLevel: debug
-# BTC blockstream api
-# https://github.com/Blockstream/esplora/blob/master/API.md
-btcApiEndpoint: ~
-
 tx-relayer:
   confirmationDepth: 6
   # BTC network type:mainet/testnet/signet
   netParams: testnet
+  # BTC blockstream api
+  # https://github.com/Blockstream/esplora/blob/master/API.md
+  btcApiEndpoint: ~
 
 database:
   host:
@@ -28,11 +25,3 @@ lorenzo:
   chain-id: lorenzod_83291-1
   # lorenzo rpc
   rpc-addr: ~
-  # lorenzo cosmos account address prefix
-  account-prefix: lrz
-  gas-adjustment: 1.5
-  gas-prices: 0alrz
-  debug: true
-  timeout: 20s
-  output-format: json
-  sign-mode: direct
