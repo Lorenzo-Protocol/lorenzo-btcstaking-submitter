@@ -24,7 +24,7 @@ const (
 )
 
 const (
-	LorenzoBNBDuplicateErrorMessage = "duplicated receipt"
+	LorenzoBNBDuplicateErrorMessage = "already exists"
 )
 
 type BNBTxRelayer struct {
