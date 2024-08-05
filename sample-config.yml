@@ -4,7 +4,12 @@ tx-relayer:
   netParams: testnet
   # BTC blockstream api
   # https://github.com/Blockstream/esplora/blob/master/API.md
-  btcApiEndpoint: ~
+  btcApiEndpoint:
+
+bnb-tx-relayer:
+  confirmationDepth: 15
+  planStakeHubAddress: 0xabcd
+  rpcUrl: https://bsc-dataseed1.binance.org
 
 database:
   host:

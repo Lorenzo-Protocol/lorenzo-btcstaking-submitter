@@ -37,25 +37,37 @@ func RootAction(c *cobra.Command, _ []string) {
 	if err != nil {
 		panic(err)
 	}
-	parentLogger, err := cfg.CreateLogger(enableDebug)
+	rootLogger, err := cfg.CreateLogger(enableDebug)
 	if err != nil {
 		panic(err)
 	}
-	logger := parentLogger.With().Sugar()
+	logger := rootLogger.With().Sugar()
 
-	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, lorenzoClient)
+	var txRelayerList []txrelayer.ITxRelayer
+	btcTxRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, lorenzoClient)
 	if err != nil {
 		panic(err)
 	}
-	txRelayer.Start()
+	txRelayerList = append(txRelayerList, btcTxRelayer)
 
-	addInterruptHandler(func() {
-		parentLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
-		txRelayer.Stop()
-		txRelayer.WaitForShutdown()
-		parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
-	})
+	if cfg.BNBTxRelayer.RpcUrl != "" {
+		bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, &cfg.Lorenzo, logger)
+		if err != nil {
+			panic(err)
+		}
+		txRelayerList = append(txRelayerList, bnbTxRelayer)
+	}
+
+	for _, txRelayer := range txRelayerList {
+		txRelayer.Start()
+		addInterruptHandler(func() {
+			rootLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
+			txRelayer.Stop()
+			txRelayer.WaitForShutdown()
+			rootLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
+		})
+	}
 
 	<-interruptHandlersDone
-	parentLogger.Info("Shutdown complete")
+	rootLogger.Info("Shutdown complete")
 }

@@ -16,8 +16,9 @@ const (
 )
 
 type Config struct {
-	Lorenzo   lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
-	TxRelayer TxRelayerConfig      `mapstructure:"tx-relayer"`
+	Lorenzo      lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
+	TxRelayer    TxRelayerConfig      `mapstructure:"tx-relayer"`
+	BNBTxRelayer BNBTxRelayerConfig   `mapstructure:"bnb-tx-relayer"`
 
 	Database Database `mapstructure:"database"`
 }
@@ -47,6 +48,9 @@ func (cfg *TxRelayerConfig) Validate() error {
 func (cfg *Config) Validate() error {
 	cfg.fillDefaultValueIfNotSet()
 	if err := cfg.Lorenzo.Validate(); err != nil {
+		return err
+	}
+	if err := cfg.BNBTxRelayer.Validate(); err != nil {
 		return err
 	}
 
@@ -80,6 +84,17 @@ func (cfg *Config) fillDefaultValueIfNotSet() {
 
 func (cfg *Config) CreateLogger(debug bool) (*zap.Logger, error) {
 	return NewRootLogger("auto", debug)
+}
+
+type BNBTxRelayerConfig struct {
+	RpcUrl              string `mapstructure:"rpcUrl"`
+	PlanStakeHubAddress string `mapstructure:"planStakeHubAddress"`
+	ConfirmationDepth   uint64 `mapstructure:"confirmationDepth"`
+}
+
+func (cfg *BNBTxRelayerConfig) Validate() error {
+
+	return nil
 }
 
 // NewConfig returns a fully parsed Config object from a given file directory

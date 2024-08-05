@@ -3,6 +3,11 @@ module github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter
 go 1.21.12
 
 require (
+	github.com/Lorenzo-Protocol/lorenzo-sdk/v2 v2.0.0-20240805052002-56f7f17d6912
+	github.com/Lorenzo-Protocol/lorenzo/v2 v2.0.0-20240804095124-ad6d0b97009b
+)
+
+require (
 	cosmossdk.io/errors v1.0.1 // indirect
 	cosmossdk.io/log v1.3.1 // indirect
 	cosmossdk.io/math v1.3.0 // indirect
@@ -32,8 +37,9 @@ require (
 )
 
 require (
-	github.com/Lorenzo-Protocol/lorenzo-sdk/v2 v2.0.0-20240730095412-8b414c5e2dd7
-	github.com/Lorenzo-Protocol/lorenzo/v2 v2.0.0-20240730090122-fdcb89a9d3d6
+	github.com/ethereum/go-ethereum v1.10.26
+	github.com/hashicorp/golang-lru/v2 v2.0.7
+	golang.org/x/crypto v0.21.0
 )
 
 require (
@@ -97,7 +103,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.26 // indirect
 	github.com/evmos/ethermint v0.22.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -217,7 +222,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
