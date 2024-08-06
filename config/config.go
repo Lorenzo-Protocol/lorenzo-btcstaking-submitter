@@ -40,6 +40,12 @@ func (cfg *TxRelayerConfig) Validate() error {
 	if cfg.ConfirmationDepth < MinConfirmationDepth {
 		return fmt.Errorf("confirmationDepth must be larger than %d", MinConfirmationDepth)
 	}
+	if cfg.BtcApiEndpoint == "" {
+		return fmt.Errorf("btcApiEndpoint cannot be empty")
+	}
+	if cfg.NetParams == "" {
+		return fmt.Errorf("BTC netParams cannot be empty")
+	}
 
 	return nil
 }
