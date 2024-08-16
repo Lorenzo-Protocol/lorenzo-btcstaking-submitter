@@ -66,8 +66,8 @@ func NewTxRelayer(database db.IBTCRepository, logger *zap.SugaredLogger, conf *c
 		return nil, err
 	}
 
-	logger.Infof("new txRelayer on BTC network: %s, confirmation: %d, submitter: %s",
-		conf.NetParams, conf.ConfirmationDepth, txRelayer.submitter)
+	logger.Infof("new txRelayer on BTC network: %s, confirmations: %d, submitter: %s",
+		conf.NetParams, conf.ConfirmationDepth+1, txRelayer.submitter)
 	return txRelayer, nil
 }
 
