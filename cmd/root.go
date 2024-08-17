@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
 	"github.com/spf13/cobra"
 
 	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
@@ -23,11 +23,6 @@ func RootAction(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	database, err := db.NewBTCRepository()
-	if err != nil {
-		panic(err)
-	}
-
 	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
 	if err != nil {
 		panic(err)
@@ -43,18 +38,28 @@ func RootAction(c *cobra.Command, _ []string) {
 	}
 	logger := parentLogger.With().Sugar()
 
-	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, lorenzoClient)
+	var txRelayerList []txrelayer.ITxRelayer
+	btcTxRelayer, err := txrelayer.NewTxRelayer(logger, &cfg.TxRelayer, lorenzoClient)
 	if err != nil {
 		panic(err)
 	}
-	txRelayer.Start()
+	txRelayerList = append(txRelayerList, btcTxRelayer)
 
-	addInterruptHandler(func() {
-		parentLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
-		txRelayer.Stop()
-		txRelayer.WaitForShutdown()
-		parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
-	})
+	bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, lorenzoClient, logger)
+	if err != nil {
+		panic(err)
+	}
+	txRelayerList = append(txRelayerList, bnbTxRelayer)
+
+	for _, txRelayer := range txRelayerList {
+		txRelayer.Start()
+		addInterruptHandler(func() {
+			parentLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
+			txRelayer.Stop()
+			txRelayer.WaitForShutdown()
+			parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
+		})
+	}
 
 	<-interruptHandlersDone
 	parentLogger.Info("Shutdown complete")

@@ -213,10 +213,10 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Lorenzo-Protocol/ethermint v0.22.0-lorenzo-sdk-2 h1:ADu+SxPiTUJObXJjZobR8SHClMWdVNV9HNIR4fasfVw=
 github.com/Lorenzo-Protocol/ethermint v0.22.0-lorenzo-sdk-2/go.mod h1:JEhGmVj5rZX5bTfOqh3nltE2N6+qMI4HVNV2vW6PpOQ=
-github.com/Lorenzo-Protocol/lorenzo-sdk/v2 v2.0.0 h1:Je/S8AytzX11A/8ofU5qlKEsOx96N7FpEv4KjK3vwnc=
-github.com/Lorenzo-Protocol/lorenzo-sdk/v2 v2.0.0/go.mod h1:44bPxinBkbGqM0IBJYg1EAcSPXmRG8tJf5pXco2Iin8=
-github.com/Lorenzo-Protocol/lorenzo/v2 v2.0.0 h1:W1zSk2+Wziso4wa2GMzhWGX+NBdnpDHccNjleua6qbk=
-github.com/Lorenzo-Protocol/lorenzo/v2 v2.0.0/go.mod h1:jtFtlUNnjgwFOpfue8ljItt1cLSD5yh/YoExKiX8Smc=
+github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0-rc2 h1:POaR9B90+wYLgrOZx7VyYnU9p1hXfhqB7vmEa8RUk68=
+github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0-rc2/go.mod h1:aIuOnUIWz1OvBG0V96w7lIVahk3R5DVjogTE5yDu+Jg=
+github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0-rc2 h1:Slz/B0EkDNCrRQzCi9iGLHf/FLuy33JOLOQrQB4v+h4=
+github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0-rc2/go.mod h1:guwEIiGqvwjEKG3Y3QBISVpdyuP+CoORXNGjbzWqBec=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
@@ -732,6 +732,8 @@ github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v1.0.2 h1:dV3g9Z/unq5DpblPpw+Oqcv4dU/1omnb4Ok8iPY6p1c=
 github.com/hashicorp/golang-lru v1.0.2/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
+github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
+github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=

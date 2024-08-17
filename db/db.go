@@ -11,3 +11,7 @@ type IBTCRepository interface {
 	GetUnhandledBtcDepositTxs(lorenzoBTCTip uint64) ([]*BtcDepositTx, error)
 	UpdateTxStatus(txid string, status int) error
 }
+
+type IBNBRepository interface {
+	ISyncPointRepository
+}

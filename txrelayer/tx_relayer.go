@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
-	lrztypes "github.com/Lorenzo-Protocol/lorenzo/v2/types"
-	agenttypes "github.com/Lorenzo-Protocol/lorenzo/v2/x/agent/types"
-	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/keeper"
-	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/types"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
+	lrztypes "github.com/Lorenzo-Protocol/lorenzo/v3/types"
+	agenttypes "github.com/Lorenzo-Protocol/lorenzo/v3/x/agent/types"
+	"github.com/Lorenzo-Protocol/lorenzo/v3/x/btcstaking/keeper"
+	"github.com/Lorenzo-Protocol/lorenzo/v3/x/btcstaking/types"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -40,22 +40,30 @@ type TxRelayer struct {
 	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IBTCRepository, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+func NewTxRelayer(logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
 	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
 
-	_, err := database.GetSyncPoint()
+	repository, err := db.NewBTCRepository()
 	if err != nil {
 		return nil, err
 	}
-	btcParam := btc.GetBTCParams(conf.NetParams)
+	// check if sync point is set, if not set it to start block height
+	if height, err := repository.GetSyncPoint(); err != nil {
+		return nil, err
+	} else if height == 0 {
+		if err := repository.UpdateSyncPoint(conf.StartBlockHeight); err != nil {
+			return nil, err
+		}
+	}
 
+	btcParam := btc.GetBTCParams(conf.NetParams)
 	txRelayer := &TxRelayer{
 		chainName:     "BTC",
 		logger:        logger,
 		delayBlocks:   conf.ConfirmationDepth,
 		btcQuery:      btcQuery,
 		lorenzoClient: lorenzoClient,
-		repository:    database,
+		repository:    repository,
 		btcParam:      btcParam,
 		submitter:     lorenzoClient.MustGetAddr(),
 
