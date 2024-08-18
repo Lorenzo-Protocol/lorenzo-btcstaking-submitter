@@ -46,6 +46,19 @@ type BNBTxRelayerConfig struct {
 }
 
 func (cfg *BNBTxRelayerConfig) Validate() error {
+	if cfg.RpcUrl == "" {
+		return fmt.Errorf("rpcUrl cannot be empty")
+	}
+	if cfg.PlanStakeHubAddress == "" {
+		return fmt.Errorf("planStakeHubAddress cannot be empty")
+	}
+	if cfg.ConfirmationDepth == 0 {
+		return fmt.Errorf("confirmationDepth cannot be 0")
+	}
+	if cfg.StartBlockHeight == 0 {
+		return fmt.Errorf("startBlockHeight cannot be 0")
+	}
+
 	return nil
 }
 

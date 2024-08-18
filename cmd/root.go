@@ -48,9 +48,10 @@ func RootAction(c *cobra.Command, _ []string) {
 
 	bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, lorenzoClient, logger)
 	if err != nil {
-		panic(err)
+		logger.Errorf("Failed to create BNB Tx-relayer: %s", err)
+	} else {
+		txRelayerList = append(txRelayerList, bnbTxRelayer)
 	}
-	txRelayerList = append(txRelayerList, bnbTxRelayer)
 
 	for _, txRelayer := range txRelayerList {
 		txRelayer.Start()
