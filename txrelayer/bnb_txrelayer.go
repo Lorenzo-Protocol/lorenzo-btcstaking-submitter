@@ -2,7 +2,7 @@ package txrelayer
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -41,7 +41,7 @@ type BNBTxRelayer struct {
 
 func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Client, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
 	if err := cfg.Validate(); err != nil {
-		return nil, errors.New("invalid BNB Tx-relayer config")
+		return nil, fmt.Errorf("invalid BNB Tx-relayer config, error: %v", err)
 	}
 
 	chainName := "bnb"
