@@ -27,6 +27,7 @@ func RootAction(c *cobra.Command, _ []string) {
 	if err != nil {
 		panic(err)
 	}
+	lorenzoClient.SetRetryAttempts(3)
 
 	enableDebug, err := c.Flags().GetBool("debug")
 	if err != nil {

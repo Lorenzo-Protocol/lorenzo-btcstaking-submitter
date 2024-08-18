@@ -9,6 +9,7 @@ import (
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
 	"github.com/Lorenzo-Protocol/lorenzo/v3/x/btcstaking/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"go.uber.org/zap"
 
@@ -20,10 +21,6 @@ import (
 const (
 	BatchPlanStakeBlockSizeFetch = uint64(1000)
 	DefaultDelayBlocks           = uint64(15)
-)
-
-const (
-	LorenzoBNBDuplicateErrorMessage = "already exists"
 )
 
 type BNBTxRelayer struct {
@@ -42,12 +39,13 @@ type BNBTxRelayer struct {
 }
 
 func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Client, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
+	chainName := "bnb"
 	bnbClient, err := bnbclient.New(cfg.RpcUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	repository, err := db.NewBNBRepository()
+	repository, err := db.NewBNBRepository(chainName)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +60,7 @@ func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Cli
 	}
 
 	txRelayer := &BNBTxRelayer{
-		chainName:     "BNB",
+		chainName:     chainName,
 		bnbClient:     bnbClient,
 		lorenzoClient: lorenzoClient,
 		delayBlocks:   DefaultDelayBlocks,
@@ -89,11 +87,17 @@ func (r *BNBTxRelayer) Start() {
 	r.wg.Add(1)
 	go func() {
 		defer r.wg.Done()
-		r.mainLoop()
+		r.scanLoop()
+	}()
+
+	r.wg.Add(1)
+	go func() {
+		defer r.wg.Done()
+		r.submitLoop()
 	}()
 }
 
-func (r *BNBTxRelayer) mainLoop() {
+func (r *BNBTxRelayer) scanLoop() {
 	networkErrorWaitTime := time.Millisecond * 500
 	blockWaitTime := time.Second
 
@@ -137,9 +141,14 @@ func (r *BNBTxRelayer) mainLoop() {
 		}
 		r.logger.Debugf("receiptWithProofList: %d", len(receiptWithProofList))
 
-		// every receipt is valid, so it must be success, otherwise try again
-		if err := r.submit(receiptWithProofList); err != nil {
-			r.logger.Warnf("failed to submit receipts with proof: %v", err)
+		txs, err := r.ReceiptWithProofList2WrappedBTCDepositTxList(receiptWithProofList)
+		if err != nil {
+			r.logger.Warnf("failed to convert receiptWithProofList to WrappedBTCDepositTxList: %v", err)
+			continue
+		}
+
+		if err := r.repository.InsertWrappedBTCDepositTxs(txs); err != nil {
+			r.logger.Errorf("failed to insert wrapped btc deposit txs: %v", err)
 			time.Sleep(networkErrorWaitTime)
 			continue
 		}
@@ -151,29 +160,80 @@ func (r *BNBTxRelayer) mainLoop() {
 	}
 }
 
-func (r *BNBTxRelayer) submit(receiptWithProofList []*bnbclient.ReceiptWithProof) error {
-	if len(receiptWithProofList) == 0 {
+func (r *BNBTxRelayer) submitLoop() {
+	networkErrorWaitTime := time.Millisecond * 500
+	blockWaitTime := time.Second
+
+	for {
+		select {
+		case <-r.quit:
+			return
+		default:
+		}
+		lorenzoBNBTip, err := r.lorenzoClient.BNBLatestHeader()
+		if err != nil {
+			r.logger.Warnf("failed to get latest BNB header: %v", err)
+			time.Sleep(networkErrorWaitTime)
+			continue
+		}
+
+		txs, err := r.repository.GetUnhandledWrappedBTCDepositTxs(lorenzoBNBTip.Number)
+		if err != nil {
+			r.logger.Warnf("failed to get unhandled wrapped btc deposit txs: %v", err)
+			time.Sleep(networkErrorWaitTime)
+			continue
+		}
+
+		if len(txs) == 0 {
+			r.logger.Debugf("no unhandled wrapped btc deposit txs")
+			time.Sleep(blockWaitTime)
+			continue
+		}
+
+		if err := r.submit(txs); err != nil {
+			r.logger.Warnf("failed to submit txs: %v", err)
+			time.Sleep(networkErrorWaitTime)
+			continue
+		}
+	}
+}
+
+func (r *BNBTxRelayer) submit(txs []*db.WrappedBTCDepositTx) error {
+	if len(txs) == 0 {
 		return nil
 	}
 	networkErrorWaitTime := time.Millisecond * 500
 
 	i := 0
-	for i < len(receiptWithProofList) {
-		receiptWithProof := receiptWithProofList[i]
+	for i < len(txs) {
+		select {
+		case <-r.quit:
+			return nil
+		default:
+		}
+
+		tx := txs[i]
+		receiptRaw, err := hexutil.Decode(tx.Receipt)
+		if err != nil {
+			r.logger.Warnf("failed to decode receipt, txid:%s error:%v", tx.Txid, err)
+			r.markDepositTxInvalid(tx.Txid)
+			i++ // skip this tx
+			continue
+		}
+		proofRaw, err := hexutil.Decode(tx.Proof)
+		if err != nil {
+			r.markDepositTxInvalid(tx.Txid)
+			i++ // skip this tx
+			return err
+		}
+
 		msg := &types.MsgCreateBTCBStaking{
 			Signer:  r.submitter,
-			Number:  receiptWithProof.Receipt.BlockNumber.Uint64(),
-			Receipt: nil,
-			Proof:   nil,
+			Number:  tx.Height,
+			Receipt: receiptRaw,
+			Proof:   proofRaw,
 		}
-		receiptRaw, err := rlp.EncodeToBytes(receiptWithProof.Receipt)
-		if err != nil {
-			return err
-		}
-		proofRaw, err := rlp.EncodeToBytes(receiptWithProof.Proof)
-		if err != nil {
-			return err
-		}
+
 		msg.Receipt = receiptRaw
 		msg.Proof = proofRaw
 		r.logger.Debugf("BlockNumber: %d\n", msg.Number)
@@ -185,12 +245,20 @@ func (r *BNBTxRelayer) submit(receiptWithProofList []*bnbclient.ReceiptWithProof
 		if err != nil {
 			switch {
 			case isBNBStakingDuplicate(err):
+				// duplicate tx, mark as success, not really error
+				err = nil
+				r.markDepositTxSuccess(tx.Txid)
 				i++
 			case isBNBStakingRetryError(err):
+				//retry again
 			default:
-				return err
+				r.markDepositTxInvalid(tx.Txid)
+				i++
 			}
 
+			if err != nil {
+				r.logger.Warnf("failed to submit tx: %v", err)
+			}
 			//try handle this transaction again
 			time.Sleep(networkErrorWaitTime)
 		} else {
@@ -209,6 +277,43 @@ func (r *BNBTxRelayer) WaitForShutdown() {
 	r.wg.Wait()
 }
 
+func (r *BNBTxRelayer) markDepositTxInvalid(txid string) {
+	if err := r.repository.MarkInvalid(txid); err != nil {
+		r.logger.Warnf("failed to mark invalid, txid:%s, error:%v", txid, err)
+	}
+}
+
+func (r *BNBTxRelayer) markDepositTxSuccess(txid string) {
+	if err := r.repository.MarkSuccess(txid); err != nil {
+		r.logger.Warnf("failed to mark success, txid:%s, error:%v", txid, err)
+	}
+}
+
+func (r *BNBTxRelayer) ReceiptWithProofList2WrappedBTCDepositTxList(receiptWithProofList []*bnbclient.ReceiptWithProof) ([]*db.WrappedBTCDepositTx, error) {
+	wrappedBTCDepositTxList := make([]*db.WrappedBTCDepositTx, 0, len(receiptWithProofList))
+	for _, receiptWithProof := range receiptWithProofList {
+		receiptRaw, err := rlp.EncodeToBytes(receiptWithProof.Receipt)
+		if err != nil {
+			return nil, err
+		}
+		proofRaw, err := rlp.EncodeToBytes(receiptWithProof.Proof)
+		if err != nil {
+			return nil, err
+		}
+		wrappedBTCDepositTx := &db.WrappedBTCDepositTx{
+			Chain:     r.chainName,
+			Txid:      receiptWithProof.Receipt.TxHash.Hex(),
+			Height:    receiptWithProof.Receipt.BlockNumber.Uint64(),
+			BlockHash: receiptWithProof.Receipt.BlockHash.Hex(),
+			BlockTime: time.Unix(int64(receiptWithProof.BlockTime), 0),
+			Receipt:   hexutil.Encode(receiptRaw),
+			Proof:     hexutil.Encode(proofRaw),
+		}
+		wrappedBTCDepositTxList = append(wrappedBTCDepositTxList, wrappedBTCDepositTx)
+	}
+	return wrappedBTCDepositTxList, nil
+}
+
 func isBNBStakingRetryError(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), LorenzoTimeoutErrorMessage) ||
 		strings.Contains(err.Error(), PostFailedMessage) ||
@@ -216,5 +321,5 @@ func isBNBStakingRetryError(err error) bool {
 }
 
 func isBNBStakingDuplicate(err error) bool {
-	return err != nil && strings.Contains(err.Error(), LorenzoBtcStakingDuplicateTxErrorMessage)
+	return err != nil && strings.Contains(err.Error(), BNBBTCBStakingDuplication)
 }

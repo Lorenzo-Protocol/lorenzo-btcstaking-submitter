@@ -7,7 +7,8 @@ const (
 	LorenzoBtcHeaderNotFoundErrorMessage      = "btc block header not found"
 	PostFailedMessage                         = "post failed"
 
-	SequenceMismatch = "account sequence mismatch"
+	SequenceMismatch          = "account sequence mismatch"
+	BNBBTCBStakingDuplication = "duplicate event"
 )
 
 type ITxRelayer interface {

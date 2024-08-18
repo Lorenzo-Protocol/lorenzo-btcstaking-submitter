@@ -11,7 +11,7 @@ const submitterBnbSyncPointKey = "submitter/bnb-sync-point"
 
 const (
 	StatusPending                    = 0
-	StatusHandled                    = 1
+	StatusSuccess                    = 1
 	StatusInvalid                    = 2
 	StatusReceiverIsNotBelongToAgent = 3
 )
@@ -98,31 +98,4 @@ func (r *BtcRepository) hasDepositTxByTxid(dbtx *gorm.DB, txid string) (bool, er
 	}
 
 	return count > 0, nil
-}
-
-// BNBRepository BNB Smart Chain transaction relayer repository
-type BNBRepository struct {
-	db           *gorm.DB
-	syncPointKey string
-}
-
-func (r *BNBRepository) UpdateSyncPoint(height uint64) error {
-	return SetUint64(r.db, r.syncPointKey, height)
-}
-
-func (r *BNBRepository) GetSyncPoint() (uint64, error) {
-	return GetUint64(r.db, r.syncPointKey)
-}
-
-func NewBNBRepository() (IBNBRepository, error) {
-	if DB == nil {
-		return nil, errors.New("DB is not initialized yet")
-	}
-
-	mysqlDb := &BNBRepository{
-		db:           DB,
-		syncPointKey: submitterBnbSyncPointKey,
-	}
-
-	return mysqlDb, nil
 }

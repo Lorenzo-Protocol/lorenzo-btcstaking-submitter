@@ -15,8 +15,9 @@ import (
 )
 
 type ReceiptWithProof struct {
-	Receipt *types.Receipt
-	Proof   *bnblightclienttypes.Proof
+	BlockTime uint64
+	Receipt   *types.Receipt
+	Proof     *bnblightclienttypes.Proof
 }
 
 var (
@@ -91,11 +92,11 @@ func (c *Client) GetStakeBTC2JoinStakePlanReceiptsWithProof(planStakeHubAddress 
 		return nil, err
 	}
 
-	txhashSet := map[common.Hash]common.Hash{}
+	txhashBlockHashSet := map[common.Hash]common.Hash{}
 	for _, event := range stakeBTC2JoinStakePlanEvents {
-		txhashSet[event.Txhash] = event.BlockHash
+		txhashBlockHashSet[event.Txhash] = event.BlockHash
 	}
-	for txhash, blockHash := range txhashSet {
+	for txhash, blockHash := range txhashBlockHashSet {
 		receipts, err := c.ReceiptsByBlockHash(blockHash)
 		if err != nil {
 			return nil, err
@@ -123,8 +124,9 @@ func (c *Client) GetStakeBTC2JoinStakePlanReceiptsWithProof(planStakeHubAddress 
 		}
 
 		receiptWithProof := &ReceiptWithProof{
-			Receipt: receipt,
-			Proof:   proof,
+			Receipt:   receipt,
+			Proof:     proof,
+			BlockTime: blockHeader.Time,
 		}
 		stakeBTC2JoinStakePlanReceiptWithProofList = append(stakeBTC2JoinStakePlanReceiptWithProofList, receiptWithProof)
 	}

@@ -25,3 +25,22 @@ CREATE TABLE `config` (
   PRIMARY KEY (`id`),
   UNIQUE KEY (`name`)
 );
+
+CREATE TABLE `wrapped_btc_deposit_tx` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `chain` varchar(31) NOT NULL,
+  `txid` varchar(128) NOT NULL,
+  `height` bigint,
+  `block_hash` varchar(256),
+  `block_time` datetime NOT NULL,
+  `proof` TEXT NOT NULL,
+  `receipt` TEXT NOT NULL,
+  `status` tinyint NOT NULL,
+
+  `updated_time` datetime,
+  `created_time` datetime NOT NULL,
+
+  PRIMARY KEY (`id`),
+  UNIQUE KEY (`chain`,`txid`),
+  KEY (`status`)
+);

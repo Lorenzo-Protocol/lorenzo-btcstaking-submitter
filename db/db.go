@@ -5,6 +5,13 @@ type ISyncPointRepository interface {
 	GetSyncPoint() (uint64, error)
 }
 
+type IWrappedBTCDepositTxRepository interface {
+	InsertWrappedBTCDepositTxs(txs []*WrappedBTCDepositTx) error
+	GetUnhandledWrappedBTCDepositTxs(lorenzoBTCTip uint64) ([]*WrappedBTCDepositTx, error)
+	MarkSuccess(txid string) error
+	MarkInvalid(txid string) error
+}
+
 type IBTCRepository interface {
 	ISyncPointRepository
 	InsertBtcDepositTxs(txs []*BtcDepositTx) error
@@ -14,4 +21,5 @@ type IBTCRepository interface {
 
 type IBNBRepository interface {
 	ISyncPointRepository
+	IWrappedBTCDepositTxRepository
 }

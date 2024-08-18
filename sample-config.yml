@@ -5,7 +5,7 @@ tx-relayer:
   # BTC blockstream api
   # https://github.com/Blockstream/esplora/blob/master/API.md
   btcApiEndpoint: ~
-  startBlockHeight: 0
+  startBlockHeight: 193536
 
 database:
   host:

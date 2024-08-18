@@ -197,7 +197,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 			if txStakingRecordResp.Record != nil {
-				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
 					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 				}
 				i++ // skip transaction have been handled
@@ -247,7 +247,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 
-			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
 				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 			}
 

@@ -43,3 +43,20 @@ type BtcDepositTx struct {
 func (BtcDepositTx) TableName() string {
 	return "btc_deposit_tx"
 }
+
+type WrappedBTCDepositTx struct {
+	Chain     string
+	Txid      string
+	Height    uint64
+	BlockHash string
+	BlockTime time.Time
+	Receipt   string
+	Proof     string
+	Status    int
+
+	BaseTable
+}
+
+func (WrappedBTCDepositTx) TableName() string {
+	return "wrapped_btc_deposit_tx"
+}
