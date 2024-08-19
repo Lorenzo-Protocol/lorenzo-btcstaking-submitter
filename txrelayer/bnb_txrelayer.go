@@ -175,6 +175,7 @@ func (r *BNBTxRelayer) submitLoop() {
 			return
 		default:
 		}
+
 		lorenzoBNBTip, err := r.lorenzoClient.BNBLatestHeader()
 		if err != nil {
 			r.logger.Warnf("failed to get latest BNB header: %v", err)
@@ -195,52 +196,40 @@ func (r *BNBTxRelayer) submitLoop() {
 			continue
 		}
 
-		if err := r.submit(txs); err != nil {
-			r.logger.Warnf("failed to submit txs: %v", err)
-			time.Sleep(networkErrorWaitTime)
-			continue
-		}
+		r.submit(txs)
 	}
 }
 
-func (r *BNBTxRelayer) submit(txs []*db.WrappedBTCDepositTx) error {
+func (r *BNBTxRelayer) submit(txs []*db.WrappedBTCDepositTx) {
 	if len(txs) == 0 {
-		return nil
+		return
 	}
-	networkErrorWaitTime := time.Millisecond * 500
 
-	i := 0
-	for i < len(txs) {
+	for _, tx := range txs {
 		select {
 		case <-r.quit:
-			return nil
+			return
 		default:
 		}
 
-		tx := txs[i]
 		receiptRaw, err := hexutil.Decode(tx.Receipt)
 		if err != nil {
-			r.logger.Warnf("failed to decode receipt, txid:%s error:%v", tx.Txid, err)
-			r.markDepositTxInvalid(tx.Txid)
-			i++ // skip this tx
+			err = fmt.Errorf("invalid receipt: %v", err)
+			r.markDepositTxInvalid(tx.Txid, err)
 			continue
 		}
 		proofRaw, err := hexutil.Decode(tx.Proof)
 		if err != nil {
-			r.markDepositTxInvalid(tx.Txid)
-			i++ // skip this tx
-			return err
+			err = fmt.Errorf("invalid proof: %v", err)
+			r.markDepositTxInvalid(tx.Txid, err)
+			continue
 		}
-
 		msg := &types.MsgCreateBTCBStaking{
 			Signer:  r.submitter,
 			Number:  tx.Height,
 			Receipt: receiptRaw,
 			Proof:   proofRaw,
 		}
-
-		msg.Receipt = receiptRaw
-		msg.Proof = proofRaw
 		r.logger.Debugf("BlockNumber: %d\n", msg.Number)
 		r.logger.Debugf("Receipt: %x\n", msg.Receipt)
 		r.logger.Debugf("Proof: %x\n", msg.Proof)
@@ -250,28 +239,15 @@ func (r *BNBTxRelayer) submit(txs []*db.WrappedBTCDepositTx) error {
 		if err != nil {
 			switch {
 			case isBNBStakingDuplicate(err):
-				// duplicate tx, mark as success, not really error
-				err = nil
 				r.markDepositTxSuccess(tx.Txid)
-				i++
 			case isBNBStakingRetryError(err):
-				//retry again
+				//need to retry
+				r.logger.Warnf("failed to submit tx: %v, will retry", err)
 			default:
-				r.markDepositTxInvalid(tx.Txid)
-				i++
+				r.markDepositTxInvalid(tx.Txid, err)
 			}
-
-			if err != nil {
-				r.logger.Warnf("failed to submit tx: %v", err)
-			}
-			//try handle this transaction again
-			time.Sleep(networkErrorWaitTime)
-		} else {
-			i++
 		}
 	}
-
-	return nil
 }
 
 func (r *BNBTxRelayer) Stop() {
@@ -282,9 +258,10 @@ func (r *BNBTxRelayer) WaitForShutdown() {
 	r.wg.Wait()
 }
 
-func (r *BNBTxRelayer) markDepositTxInvalid(txid string) {
+func (r *BNBTxRelayer) markDepositTxInvalid(txid string, err error) {
+	r.logger.Warnf("invalid deposit tx, txid:%s, error:%v", txid, err)
 	if err := r.repository.MarkInvalid(txid); err != nil {
-		r.logger.Warnf("failed to mark invalid, txid:%s, error:%v", txid, err)
+		r.logger.Warnf("failed to mark deposit tx invalid, txid:%s, error:%v", txid, err)
 	}
 }
 
