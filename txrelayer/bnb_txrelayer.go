@@ -126,7 +126,7 @@ func (r *BNBTxRelayer) scanLoop() {
 		}
 		if syncPoint+r.delayBlocks >= bnbChainTipNumber {
 			r.logger.Infof("Sync point is %d, BNB chain tip is %d, wait for %d blocks",
-				syncPoint, bnbChainTipNumber, syncPoint+r.delayBlocks-bnbChainTipNumber)
+				syncPoint, bnbChainTipNumber, syncPoint+r.delayBlocks-bnbChainTipNumber+1)
 			time.Sleep(blockWaitTime)
 			continue
 		}
