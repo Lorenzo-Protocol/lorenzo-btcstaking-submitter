@@ -42,6 +42,7 @@ type TxRelayer struct {
 
 func NewTxRelayer(logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
 	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
+	logger = logger.Named("btc")
 
 	repository, err := db.NewBTCRepository()
 	if err != nil {
