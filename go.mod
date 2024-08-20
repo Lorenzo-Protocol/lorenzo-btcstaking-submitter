@@ -244,6 +244,7 @@ require (
 replace (
 	cosmossdk.io/tools/rosetta => cosmossdk.io/tools/rosetta v0.2.1
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+	github.com/ethereum/go-ethereum => github.com/Lorenzo-Protocol/go-ethereum v1.10.26-lorenzo-rc1
 	github.com/evmos/ethermint => github.com/Lorenzo-Protocol/ethermint v0.22.0-lorenzo-sdk-2
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
