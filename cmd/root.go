@@ -23,12 +23,6 @@ func RootAction(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
-	if err != nil {
-		panic(err)
-	}
-	lorenzoClient.SetRetryAttempts(3)
-
 	enableDebug, err := c.Flags().GetBool("debug")
 	if err != nil {
 		panic(err)
@@ -38,6 +32,12 @@ func RootAction(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 	logger := parentLogger.With().Sugar()
+
+	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, parentLogger)
+	if err != nil {
+		panic(err)
+	}
+	lorenzoClient.SetRetryAttempts(3)
 
 	var txRelayerList []txrelayer.ITxRelayer
 	btcTxRelayer, err := txrelayer.NewTxRelayer(logger, &cfg.TxRelayer, lorenzoClient)
