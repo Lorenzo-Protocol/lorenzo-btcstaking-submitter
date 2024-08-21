@@ -160,6 +160,7 @@ func (r *BNBTxRelayer) scanLoop() {
 
 		if err := r.repository.UpdateSyncPoint(end); err != nil {
 			r.logger.Warnf("failed to set sync point: %v", err)
+			continue
 		}
 		r.logger.Infof("sync point updated to %d", end)
 	}
