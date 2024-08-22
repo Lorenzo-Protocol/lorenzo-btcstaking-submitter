@@ -188,9 +188,7 @@ func (r *TxRelayer) submitLoop() {
 			continue
 		}
 
-		i := 0
-		for i < len(txs) {
-			tx := txs[i]
+		for _, tx := range txs {
 			txStakingRecordResp, err := r.lorenzoClient.GetBTCStakingRecord(tx.Txid)
 			if err != nil {
 				r.logger.Errorf("Failed to get btc staking record, txid: %s, error: %v", tx.Txid, err)
@@ -198,10 +196,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 			if txStakingRecordResp.Record != nil {
-				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
-					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
-				}
-				i++ // skip transaction have been handled
+				r.markDepositTxSuccess(tx.Txid)
 				continue
 			}
 
@@ -221,9 +216,7 @@ func (r *TxRelayer) submitLoop() {
 			if tx.AgentId == 0 {
 				agent := r.GetAgentByAddress(tx.ReceiverAddress)
 				if agent == nil {
-					r.logger.Warnf("Agent not found for btc deposit tx, txid: %s, receiverAddress: %s", tx.Txid, tx.ReceiverAddress)
-					r.updateDepositTxStatus(tx.Txid, db.StatusReceiverIsNotBelongToAgent)
-					i++
+					r.markDepositTxNotBelongToAgent(tx.Txid)
 					continue
 				}
 
@@ -232,9 +225,7 @@ func (r *TxRelayer) submitLoop() {
 
 			msg, err := r.newMsgCreateBTCStaking(tx.AgentId, r.submitter, proofRaw, txBytes)
 			if err != nil {
-				r.logger.Errorf("Failed to create msgCreateBTCStaking: %v", err)
-				r.updateDepositTxStatus(tx.Txid, db.StatusInvalid)
-				i++ // skip this tx
+				r.markDepositTxInvalid(tx.Txid)
 				continue
 			}
 
@@ -242,19 +233,33 @@ func (r *TxRelayer) submitLoop() {
 			if err != nil {
 				r.logger.Errorf("Failed to create btc staking with btc proof, txid:%s, error: %v", tx.Txid, err)
 				if !isStakingMintTryAgainError(err) {
-					r.updateDepositTxStatus(tx.Txid, db.StatusInvalid)
-					i++ // skip this tx
+					r.markDepositTxInvalid(tx.Txid)
 				}
+				time.Sleep(connectErrWaitInterval)
 				continue
 			}
 
-			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
-				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
-			}
-
+			r.markDepositTxSuccess(tx.Txid)
 			r.logger.Infof("Submitted btc staking tx, txid: %s", tx.Txid)
-			i++
 		}
+	}
+}
+
+func (r *TxRelayer) markDepositTxSuccess(txid string) {
+	if err := r.repository.UpdateTxStatus(txid, db.StatusSuccess); err != nil {
+		r.logger.Errorf("Failed to update tx status to success, txid: %s, error: %v", txid, err)
+	}
+}
+
+func (r *TxRelayer) markDepositTxInvalid(txid string) {
+	if err := r.repository.UpdateTxStatus(txid, db.StatusInvalid); err != nil {
+		r.logger.Errorf("Failed to update tx status to invalid, txid: %s, error: %v", txid, err)
+	}
+}
+
+func (r *TxRelayer) markDepositTxNotBelongToAgent(txid string) {
+	if err := r.repository.UpdateTxStatus(txid, db.StatusReceiverIsNotBelongToAgent); err != nil {
+		r.logger.Errorf("Failed to update tx status to invalid, txid: %s, error: %v", txid, err)
 	}
 }
 
@@ -352,12 +357,6 @@ func (r *TxRelayer) IsValidDepositReceiver(addr string) bool {
 	}
 
 	return false
-}
-
-func (r *TxRelayer) updateDepositTxStatus(txid string, status int) {
-	if err := r.repository.UpdateTxStatus(txid, status); err != nil {
-		r.logger.Errorf("Failed to update tx status to [%d], txid: %s, error: %v", status, txid, err)
-	}
 }
 
 func (r *TxRelayer) newMsgCreateBTCStaking(agentId uint64, submitterAddressHex string, proofRaw []byte, txBytes []byte) (*types.MsgCreateBTCStaking, error) {
