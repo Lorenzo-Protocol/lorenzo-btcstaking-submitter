@@ -5,6 +5,7 @@ tx-relayer:
   # BTC blockstream api
   # https://github.com/Blockstream/esplora/blob/master/API.md
   btcApiEndpoint: ~
+  startBlockHeight: 193536
 
 database:
   host:
@@ -12,6 +13,12 @@ database:
   username: admin
   password: admin
   dbname: lorenzo
+
+bnb-tx-relayer:
+  planStakeHubAddress: 0xabcd
+  confirmationDepth: 15
+  rpcUrl: https://bsc-dataseed1.binance.org
+  startBlockHeight: 43050750
 
 lorenzo:
   # cosmos Keyring

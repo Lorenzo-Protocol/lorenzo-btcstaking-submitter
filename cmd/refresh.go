@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/blockscout"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/blockscout"
 )
 
 func BlockscoutRefreshCmd() *cobra.Command {

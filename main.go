@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/cmd"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/cmd"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/config"
+	lrzcfg "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/config"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -16,8 +16,9 @@ const (
 )
 
 type Config struct {
-	Lorenzo   lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
-	TxRelayer TxRelayerConfig      `mapstructure:"tx-relayer"`
+	Lorenzo      lrzcfg.LorenzoConfig `mapstructure:"lorenzo"`
+	TxRelayer    TxRelayerConfig      `mapstructure:"tx-relayer"`
+	BNBTxRelayer BNBTxRelayerConfig   `mapstructure:"bnb-tx-relayer"`
 
 	Database Database `mapstructure:"database"`
 }
@@ -34,6 +35,31 @@ type TxRelayerConfig struct {
 	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
 	NetParams         string `mapstructure:"netParams"`
 	BtcApiEndpoint    string `mapstructure:"btcApiEndpoint"`
+	StartBlockHeight  uint64 `mapstructure:"startBlockHeight"`
+}
+
+type BNBTxRelayerConfig struct {
+	RpcUrl              string `mapstructure:"rpcUrl"`
+	PlanStakeHubAddress string `mapstructure:"planStakeHubAddress"`
+	ConfirmationDepth   uint64 `mapstructure:"confirmationDepth"`
+	StartBlockHeight    uint64 `mapstructure:"startBlockHeight"`
+}
+
+func (cfg *BNBTxRelayerConfig) Validate() error {
+	if cfg.RpcUrl == "" {
+		return fmt.Errorf("rpcUrl cannot be empty")
+	}
+	if cfg.PlanStakeHubAddress == "" {
+		return fmt.Errorf("planStakeHubAddress cannot be empty")
+	}
+	if cfg.ConfirmationDepth == 0 {
+		return fmt.Errorf("confirmationDepth cannot be 0")
+	}
+	if cfg.StartBlockHeight == 0 {
+		return fmt.Errorf("startBlockHeight cannot be 0")
+	}
+
+	return nil
 }
 
 func (cfg *TxRelayerConfig) Validate() error {

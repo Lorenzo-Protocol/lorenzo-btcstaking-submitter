@@ -7,10 +7,11 @@ import (
 )
 
 const submitterBtcSyncPointKey = "submitter/btc-sync-point"
+const submitterBnbSyncPointKey = "submitter/bnb-sync-point"
 
 const (
 	StatusPending                    = 0
-	StatusHandled                    = 1
+	StatusSuccess                    = 1
 	StatusInvalid                    = 2
 	StatusReceiverIsNotBelongToAgent = 3
 )

@@ -6,20 +6,20 @@ import (
 	"sync"
 	"time"
 
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
-	lrztypes "github.com/Lorenzo-Protocol/lorenzo/v2/types"
-	agenttypes "github.com/Lorenzo-Protocol/lorenzo/v2/x/agent/types"
-	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/keeper"
-	"github.com/Lorenzo-Protocol/lorenzo/v2/x/btcstaking/types"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
+	lrztypes "github.com/Lorenzo-Protocol/lorenzo/v3/types"
+	agenttypes "github.com/Lorenzo-Protocol/lorenzo/v3/x/agent/types"
+	"github.com/Lorenzo-Protocol/lorenzo/v3/x/btcstaking/keeper"
+	"github.com/Lorenzo-Protocol/lorenzo/v3/x/btcstaking/types"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"go.uber.org/zap"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/btc"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/db"
 )
 
 type TxRelayer struct {
@@ -40,22 +40,31 @@ type TxRelayer struct {
 	quit chan struct{}
 }
 
-func NewTxRelayer(database db.IBTCRepository, logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
+func NewTxRelayer(logger *zap.SugaredLogger, conf *config.TxRelayerConfig, lorenzoClient *lrzclient.Client) (*TxRelayer, error) {
 	btcQuery := btc.NewBTCQuery(conf.BtcApiEndpoint)
+	logger = logger.Named("btc")
 
-	_, err := database.GetSyncPoint()
+	repository, err := db.NewBTCRepository()
 	if err != nil {
 		return nil, err
 	}
-	btcParam := btc.GetBTCParams(conf.NetParams)
+	// check if sync point is set, if not set it to start block height
+	if height, err := repository.GetSyncPoint(); err != nil {
+		return nil, err
+	} else if height == 0 {
+		if err := repository.UpdateSyncPoint(conf.StartBlockHeight); err != nil {
+			return nil, err
+		}
+	}
 
+	btcParam := btc.GetBTCParams(conf.NetParams)
 	txRelayer := &TxRelayer{
 		chainName:     "BTC",
 		logger:        logger,
 		delayBlocks:   conf.ConfirmationDepth,
 		btcQuery:      btcQuery,
 		lorenzoClient: lorenzoClient,
-		repository:    database,
+		repository:    repository,
 		btcParam:      btcParam,
 		submitter:     lorenzoClient.MustGetAddr(),
 
@@ -189,7 +198,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 			if txStakingRecordResp.Record != nil {
-				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+				if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
 					r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 				}
 				i++ // skip transaction have been handled
@@ -239,7 +248,7 @@ func (r *TxRelayer) submitLoop() {
 				continue
 			}
 
-			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusHandled); err != nil {
+			if err := r.repository.UpdateTxStatus(tx.Txid, db.StatusSuccess); err != nil {
 				r.logger.Errorf("Failed to update tx status, txid: %s, error: %v", tx.Txid, err)
 			}
 

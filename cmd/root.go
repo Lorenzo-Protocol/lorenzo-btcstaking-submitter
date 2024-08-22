@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v2/client"
+	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
 	"github.com/spf13/cobra"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/txrelayer"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/txrelayer"
 )
 
 func RootAction(c *cobra.Command, _ []string) {
@@ -23,16 +23,6 @@ func RootAction(c *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	database, err := db.NewBTCRepository()
-	if err != nil {
-		panic(err)
-	}
-
-	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, nil)
-	if err != nil {
-		panic(err)
-	}
-
 	enableDebug, err := c.Flags().GetBool("debug")
 	if err != nil {
 		panic(err)
@@ -43,18 +33,35 @@ func RootAction(c *cobra.Command, _ []string) {
 	}
 	logger := parentLogger.With().Sugar()
 
-	txRelayer, err := txrelayer.NewTxRelayer(database, logger, &cfg.TxRelayer, lorenzoClient)
+	lorenzoClient, err := lrzclient.New(&cfg.Lorenzo, parentLogger)
 	if err != nil {
 		panic(err)
 	}
-	txRelayer.Start()
+	lorenzoClient.SetRetryAttempts(3)
 
-	addInterruptHandler(func() {
-		parentLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
-		txRelayer.Stop()
-		txRelayer.WaitForShutdown()
-		parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
-	})
+	var txRelayerList []txrelayer.ITxRelayer
+	btcTxRelayer, err := txrelayer.NewTxRelayer(logger, &cfg.TxRelayer, lorenzoClient)
+	if err != nil {
+		panic(err)
+	}
+	txRelayerList = append(txRelayerList, btcTxRelayer)
+
+	bnbTxRelayer, err := txrelayer.NewBnbTxRelayer(cfg.BNBTxRelayer, lorenzoClient, logger)
+	if err != nil {
+		logger.Errorf("Failed to create BNB Tx-relayer: %s", err)
+	} else {
+		txRelayerList = append(txRelayerList, bnbTxRelayer)
+	}
+
+	for _, txRelayer := range txRelayerList {
+		txRelayer.Start()
+		addInterruptHandler(func() {
+			parentLogger.Sugar().Infof("Stopping %s Tx-relayer...", txRelayer.ChainName())
+			txRelayer.Stop()
+			txRelayer.WaitForShutdown()
+			parentLogger.Sugar().Infof("%s Tx-relayer shutdown", txRelayer.ChainName())
+		})
+	}
 
 	<-interruptHandlersDone
 	parentLogger.Info("Shutdown complete")
