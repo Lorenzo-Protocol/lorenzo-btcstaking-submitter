@@ -1,3 +1,10 @@
+database:
+  host:
+  port: 3306
+  username: admin
+  password: admin
+  dbname: lorenzo
+
 tx-relayer:
   confirmationDepth: 1
   # BTC network type:mainet/testnet/signet
@@ -7,15 +14,7 @@ tx-relayer:
   btcApiEndpoint: ~
   startBlockHeight: 193536
 
-database:
-  host:
-  port: 3306
-  username: admin
-  password: admin
-  dbname: lorenzo
-
 bnb-tx-relayer:
-  planStakeHubAddress: 0xabcd
   confirmationDepth: 15
   rpcUrl: https://bsc-dataseed1.binance.org
   startBlockHeight: 43050750
