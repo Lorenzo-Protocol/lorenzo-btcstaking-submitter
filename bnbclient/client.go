@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru/v2"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/bnbclient/bnbtypes"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/bnbclient/bnbtypes"
 )
 
 const (

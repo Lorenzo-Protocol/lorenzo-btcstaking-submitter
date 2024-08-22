@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
 )
 
 type Refresher struct {

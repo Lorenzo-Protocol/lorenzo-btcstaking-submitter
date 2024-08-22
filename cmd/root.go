@@ -4,9 +4,9 @@ import (
 	lrzclient "github.com/Lorenzo-Protocol/lorenzo-sdk/v3/client"
 	"github.com/spf13/cobra"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/txrelayer"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/txrelayer"
 )
 
 func RootAction(c *cobra.Command, _ []string) {

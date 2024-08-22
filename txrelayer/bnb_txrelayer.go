@@ -14,9 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"go.uber.org/zap"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/bnbclient"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/bnbclient"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/db"
 )
 
 const (
@@ -42,6 +42,11 @@ type BNBTxRelayer struct {
 func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Client, logger *zap.SugaredLogger) (*BNBTxRelayer, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid BNB Tx-relayer config, error: %v", err)
+	}
+
+	bnblightParams, err := lorenzoClient.BNBLightClientParams()
+	if err != nil {
+		return nil, err
 	}
 
 	chainName := "bnb"
@@ -72,10 +77,9 @@ func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Cli
 
 		repository: repository,
 
-		planStakeHubAddress: common.HexToAddress(cfg.PlanStakeHubAddress),
-
-		quit:      make(chan struct{}),
-		submitter: lorenzoClient.MustGetAddr(),
+		planStakeHubAddress: common.HexToAddress(bnblightParams.Params.StakePlanHubAddress),
+		quit:                make(chan struct{}),
+		submitter:           lorenzoClient.MustGetAddr(),
 	}
 	txRelayer.logger = logger.Named(txRelayer.chainName)
 

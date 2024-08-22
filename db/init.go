@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
 )
 
 var DB *gorm.DB

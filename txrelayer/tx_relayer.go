@@ -17,9 +17,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"go.uber.org/zap"
 
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/btc"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/config"
-	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/db"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/btc"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/config"
+	"github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2/db"
 )
 
 type TxRelayer struct {

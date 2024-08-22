@@ -1,4 +1,4 @@
-module github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter
+module github.com/Lorenzo-Protocol/lorenzo-btcstaking-submitter/v2
 
 go 1.21.12
 
