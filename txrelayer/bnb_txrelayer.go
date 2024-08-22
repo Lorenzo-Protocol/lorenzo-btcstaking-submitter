@@ -83,8 +83,8 @@ func NewBnbTxRelayer(cfg config.BNBTxRelayerConfig, lorenzoClient *lrzclient.Cli
 	}
 	txRelayer.logger = logger.Named(txRelayer.chainName)
 
-	txRelayer.logger.Infof("new Relayer on BNB Smart Chain, confirmations: %d, submitter: %s",
-		txRelayer.delayBlocks+1, txRelayer.submitter)
+	txRelayer.logger.Infof("new Relayer on BNB Smart Chain, confirmations: %d, submitter: %s, planStakeHubAddress: %s",
+		txRelayer.delayBlocks+1, txRelayer.submitter, txRelayer.planStakeHubAddress.Hex())
 	return txRelayer, nil
 }
 
