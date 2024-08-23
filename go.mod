@@ -32,8 +32,8 @@ require (
 )
 
 require (
-	github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0-rc2
-	github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0-rc2
+	github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0
+	github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	golang.org/x/crypto v0.21.0

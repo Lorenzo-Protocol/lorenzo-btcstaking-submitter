@@ -215,10 +215,10 @@ github.com/Lorenzo-Protocol/ethermint v0.22.0-lorenzo-sdk-2 h1:ADu+SxPiTUJObXJjZ
 github.com/Lorenzo-Protocol/ethermint v0.22.0-lorenzo-sdk-2/go.mod h1:JEhGmVj5rZX5bTfOqh3nltE2N6+qMI4HVNV2vW6PpOQ=
 github.com/Lorenzo-Protocol/go-ethereum v1.10.26-lorenzo-rc1 h1:EiLyDvZPQY4VfJyVHoPyMqxCR0otzmzIWjQmJ8j0/1w=
 github.com/Lorenzo-Protocol/go-ethereum v1.10.26-lorenzo-rc1/go.mod h1:EYFyF19u3ezGLD4RqOkLq+ZCXzYbLoNDdZlMt7kyKFg=
-github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0-rc2 h1:POaR9B90+wYLgrOZx7VyYnU9p1hXfhqB7vmEa8RUk68=
-github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0-rc2/go.mod h1:aIuOnUIWz1OvBG0V96w7lIVahk3R5DVjogTE5yDu+Jg=
-github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0-rc2 h1:Slz/B0EkDNCrRQzCi9iGLHf/FLuy33JOLOQrQB4v+h4=
-github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0-rc2/go.mod h1:guwEIiGqvwjEKG3Y3QBISVpdyuP+CoORXNGjbzWqBec=
+github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0 h1:PYwV5HlDKWqwz6CblW+NUPeoaNS19M06RppLeyjhcUE=
+github.com/Lorenzo-Protocol/lorenzo-sdk/v3 v3.0.0/go.mod h1:0lIQfVLzkdVH8CIoHMG4U8p4G+0oIYHGvOmrWUy5mNY=
+github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0 h1:2FUE839tR7A6nwGPIL9EgkRSdNK6XcHmqFM4G/yEfbU=
+github.com/Lorenzo-Protocol/lorenzo/v3 v3.0.0/go.mod h1:guwEIiGqvwjEKG3Y3QBISVpdyuP+CoORXNGjbzWqBec=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
