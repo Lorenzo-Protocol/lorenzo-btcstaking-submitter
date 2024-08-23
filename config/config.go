@@ -39,18 +39,14 @@ type TxRelayerConfig struct {
 }
 
 type BNBTxRelayerConfig struct {
-	RpcUrl              string `mapstructure:"rpcUrl"`
-	PlanStakeHubAddress string `mapstructure:"planStakeHubAddress"`
-	ConfirmationDepth   uint64 `mapstructure:"confirmationDepth"`
-	StartBlockHeight    uint64 `mapstructure:"startBlockHeight"`
+	RpcUrl            string `mapstructure:"rpcUrl"`
+	ConfirmationDepth uint64 `mapstructure:"confirmationDepth"`
+	StartBlockHeight  uint64 `mapstructure:"startBlockHeight"`
 }
 
 func (cfg *BNBTxRelayerConfig) Validate() error {
 	if cfg.RpcUrl == "" {
 		return fmt.Errorf("rpcUrl cannot be empty")
-	}
-	if cfg.PlanStakeHubAddress == "" {
-		return fmt.Errorf("planStakeHubAddress cannot be empty")
 	}
 	if cfg.ConfirmationDepth == 0 {
 		return fmt.Errorf("confirmationDepth cannot be 0")
