@@ -2,6 +2,8 @@ package txrelayer
 
 import (
 	"context"
+	"github.com/desertbit/timer"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -88,7 +90,13 @@ func (r *TxRelayer) Start() {
 	}()
 	go func() {
 		defer r.wg.Done()
-		go r.submitLoop()
+		r.submitLoop()
+	}()
+
+	r.wg.Add(1)
+	go func() {
+		defer r.wg.Done()
+		r.updateAgentsListLoop()
 	}()
 }
 
@@ -102,6 +110,24 @@ func (r *TxRelayer) WaitForShutdown() {
 
 func (r *TxRelayer) ChainName() string {
 	return r.chainName
+}
+
+func (r *TxRelayer) updateAgentsListLoop() {
+	updateGap := time.Second * 10
+	myTimer := timer.NewTimer(updateGap)
+	for {
+		select {
+		case <-r.quit:
+			return
+		case <-myTimer.C:
+			if err := r.updateAgentsList(); err != nil {
+				myTimer.Reset(time.Millisecond * 300)
+				r.logger.Errorf("Failed to update agents list, error: %v", err)
+				continue
+			}
+			myTimer.Reset(updateGap)
+		}
+	}
 }
 
 func (r *TxRelayer) scanBlockLoop() {
@@ -409,7 +435,19 @@ func (r *TxRelayer) updateAgentsList() error {
 		nextKey = agentsResponse.Pagination.NextKey
 	}
 
-	r.agents = agents
+	updated := false
+	if r.agents == nil {
+		r.agents = agents
+		updated = true
+	} else {
+		if !reflect.DeepEqual(r.agents, agents) {
+			updated = true
+		}
+	}
+
+	if !updated {
+		return nil
+	}
 	r.logger.Info("*************** agents ***************")
 	for _, agent := range agents {
 		r.logger.Infof("agent id: %d, name: %s, btcReceivingAddress: %s, ethAddr: %s, description: %s, url: %s",
