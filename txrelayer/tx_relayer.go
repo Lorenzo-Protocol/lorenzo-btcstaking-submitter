@@ -2,7 +2,6 @@ package txrelayer
 
 import (
 	"context"
-	"github.com/desertbit/timer"
 	"reflect"
 	"strings"
 	"sync"
@@ -114,18 +113,15 @@ func (r *TxRelayer) ChainName() string {
 
 func (r *TxRelayer) updateAgentsListLoop() {
 	updateGap := time.Second * 10
-	myTimer := timer.NewTimer(updateGap)
 	for {
 		select {
 		case <-r.quit:
 			return
-		case <-myTimer.C:
+		default:
 			if err := r.updateAgentsList(); err != nil {
-				myTimer.Reset(time.Millisecond * 300)
 				r.logger.Errorf("Failed to update agents list, error: %v", err)
-				continue
 			}
-			myTimer.Reset(updateGap)
+			time.Sleep(updateGap)
 		}
 	}
 }
@@ -437,17 +433,15 @@ func (r *TxRelayer) updateAgentsList() error {
 
 	updated := false
 	if r.agents == nil {
-		r.agents = agents
 		updated = true
-	} else {
-		if !reflect.DeepEqual(r.agents, agents) {
-			updated = true
-		}
+	} else if !reflect.DeepEqual(r.agents, agents) {
+		updated = true
 	}
 
 	if !updated {
 		return nil
 	}
+
 	r.logger.Info("*************** agents ***************")
 	for _, agent := range agents {
 		r.logger.Infof("agent id: %d, name: %s, btcReceivingAddress: %s, ethAddr: %s, description: %s, url: %s",
@@ -455,6 +449,7 @@ func (r *TxRelayer) updateAgentsList() error {
 	}
 	r.logger.Infof("*************** btc deposit receiver list ***************")
 	r.logger.Info("*************** agents ***************")
+	r.agents = agents
 	return nil
 }
 
